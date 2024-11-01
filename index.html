@@ -94,32 +94,6 @@
         }
       }).addTo(map);
     });
-// Function to assign ditterent colors based on categories
- function getColor(category) { 
-    switch (category) {
-      case "Category 1":
-        return "red"; 
-      case "Category 2":
-        return "blue";
-      case "Category 3":
-        return "green"; 
-      // Add more cases for other categories as needed
-      default:
-        return "gray"; // Default color
-     } 
-   }
- // use jquery to load GeoJSON data
- $.getJSON("RamallahZones.json", function(RZ) { 
-   L.geoJson(RZ, {
-     style: function(feature) { 
-       return {
-         fillColor: getColor(feature.properties.NAME_ENGLI),
-         fillopacity: 0.3, 
-         color: getColor(feature.properties.NAME_ENGLI),
-         weight: 1.0,
-         opacity: 0.7 
-       }; 
-     },
 
 
   </script>
