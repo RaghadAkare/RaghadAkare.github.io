@@ -11,12 +11,14 @@
       height: 100%;
       width: 100%;
     }
+
     #map {
       position: absolute;
       width: 100%;
       top: 0px;
       bottom: 0;
     }
+
     /* تنسيق صورة البوصلة */
     #compass {
       position: absolute;
@@ -40,6 +42,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
   <script>
+    // تعريف خيارات الخريطة
     const mapOptions = {
       zoomSnap: 0.5,
       center: [31.9045, 35.2045],
@@ -54,7 +57,63 @@
       maxZoom: 20
     }).addTo(map);
 
-    // باقي الكود يظل كما هو ...
+    // تحميل بيانات المناطق
+    $.getJSON("RamallahZones.json", function(RZ) {
+      L.geoJson(RZ, {
+        style: function(feature) {
+          return {
+            fillColor: "yellow",
+            fillOpacity: 0.3,
+            color: "yellow",
+            weight: 1.0,
+            opacity: 0.7
+          };
+        },
+        onEachFeature: function(feature, layer) {
+          layer.on('click', function(e) {
+            alert("Zone: " + feature.properties.NAME_ENGLI + "\nMAIL_CODE: " + feature.properties.MAIL_CODE);
+          });
+        }
+      }).addTo(map);
+    });
+
+    // تحميل بيانات الحاويات
+    $.getJSON("wasteContainer.json", function(WC) {
+      L.geoJson(WC, {
+        pointToLayer: function(feature, latlng) {
+          return L.circleMarker(latlng, {
+            radius: 5,
+            fillColor: "orange",
+            color: "orange",
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+          });
+        },
+        onEachFeature: function(feature, layer) {
+          layer.on('click', function(e) {
+            alert("Material: " + feature.properties.TYPE_OF_WA);
+          });
+        }
+      }).addTo(map);
+    });
+
+    // إضافة الطبقات
+    const zonesLayer = L.geoJson();
+    const wasteContainersLayer = L.geoJson();
+
+    const baseLayers = {};
+    const overlays = {
+      "Zones": zonesLayer,
+      "Waste Containers": wasteContainersLayer
+    };
+
+    L.control.layers(baseLayers, overlays).addTo(map);
+
+    // إضافة الطبقات الافتراضية للخريطة
+    zonesLayer.addTo(map);
+    wasteContainersLayer.addTo(map);
+
   </script>
 </body>
 
