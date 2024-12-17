@@ -1,116 +1,195 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="ar">
 <head>
-  <meta charset="utf-8" />
-  <title>Ramallah Waste Containers</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
-  <style>
-    body {
-      margin: 0px;
-      height: 100%;
-      width: 100%;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invest in Birzeit</title>
 
-    #map {
-      position: absolute;
-      width: 100%;
-      top: 0px;
-      bottom: 0;
-    }
+    <!-- مكتبة Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <!-- مكتبة Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 
-    /* تنسيق صورة البوصلة */
-    #compass {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      width: 50px;
-      height: 50px;
-      z-index: 1000; /* لضمان أن تكون فوق الخريطة */
-      opacity: 0.8;
-    }
-  </style>
+    <style>
+        /* تخصيص حجم الخريطة */
+        #map {
+            height: 100vh;
+        }
+
+        /* صندوق الفلاتر */
+        .filter-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
-
 <body>
-  <div id="map"></div>
 
-  <!-- إضافة صورة البوصلة -->
-  <img id="compass" src="compass.png" alt="Compass Rose">
+    <!-- محتوى الخريطة -->
+    <div id="map"></div>
 
-  <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- صندوق الفلاتر -->
+    <div class="filter-container" id="filter-container">
+        <h5>فلترة الأراضي</h5>
+        <label>المسافة من المدارس (متر): <span id="schoolDistanceValue">400</span></label>
+        <input type="range" id="schoolDistance" min="100" max="800" value="400">
 
-  <script>
-    // تعريف خيارات الخريطة
-    const mapOptions = {
-      zoomSnap: 0.5,
-      center: [31.9045, 35.2045],
-      zoom: 17.5,
-    };
+        <label>المسافة من الخدمات (متر): <span id="serviceDistanceValue">50</span></label>
+        <input type="range" id="serviceDistance" min="0" max="100" value="50">
 
-    const map = L.map("map", mapOptions);
+        <label>نوع الشارع:</label>
+        <select id="roadType">
+            <option value="main">شارع رئيسي</option>
+            <option value="secondary">شارع فرعي</option>
+        </select>
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 20
-    }).addTo(map);
+        <button class="btn btn-primary mt-2" id="applyFilters">تطبيق الفلاتر</button>
+    </div>
 
-    // تحميل بيانات المناطق
-    $.getJSON("RamallahZones.json", function(RZ) {
-      L.geoJson(RZ, {
-        style: function(feature) {
-          return {
-            fillColor: "yellow",
-            fillOpacity: 0.3,
-            color: "yellow",
-            weight: 1.0,
-            opacity: 0.7
-          };
-        },
-        onEachFeature: function(feature, layer) {
-          layer.on('click', function(e) {
-            alert("Zone: " + feature.properties.NAME_ENGLI + "\nMAIL_CODE: " + feature.properties.MAIL_CODE);
-          });
-        }
-      }).addTo(map);
-    });
+    <!-- مكتبات JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 
-    // تحميل بيانات الحاويات
-    $.getJSON("wasteContainer.json", function(WC) {
-      L.geoJson(WC, {
-        pointToLayer: function(feature, latlng) {
-          return L.circleMarker(latlng, {
-            radius: 5,
-            fillColor: "orange",
-            color: "orange",
-            weight: 1,
-            opacity: 1,
-            fillOpacity: 0.8
-          });
-        },
-        onEachFeature: function(feature, layer) {
-          layer.on('click', function(e) {
-            alert("Material: " + feature.properties.TYPE_OF_WA);
-          });
-        }
-      }).addTo(map);
-    });
+    <script>
+        // إعداد الخريطة
+        const map = L.map('map').setView([31.9416, 35.1975], 13);
 
-    const baseLayers = {};
-    const overlays = {
-      "Zones": zonesLayer,
-      "Waste Containers": wasteContainersLayer
-    };
+        // طبقة الخريطة الأساسية
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
 
-    L.control.layers(baseLayers, overlays).addTo(map);
+        // دالة تحميل الطبقات
+        const loadGeoJSON = (url, options = {}) => {
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const layer = L.geoJSON(data, options).addTo(map);
+                    if (options.name) {
+                        L.control.layers(null, { [options.name]: layer }).addTo(map);
+                    }
+                })
+                .catch(error => console.error(`Error loading ${url}:`, error));
+        };
 
-    // إضافة الطبقات الافتراضية للخريطة
-    zonesLayer.addTo(map);
-    wasteContainersLayer.addTo(map);
+        // 1. طبقة الأراضي
+        loadGeoJSON('https://raghadakare.github.io/Birziet_Parcels.json', {
+            style: {
+                color: "black",
+                fillColor: "beige",
+                fillOpacity: 0.7
+            },
+            onEachFeature: (feature, layer) => {
+                layer.bindPopup(`
+                    <strong>رقم القطعة:</strong> ${feature.properties.ParcelNumb}<br>
+                    <strong>المساحة:</strong> ${feature.properties.Shape_Area} م²<br>
+                    <strong>السعر:</strong> ₪${feature.properties.price}
+                `);
+            },
+            name: 'الأراضي'
+        });
 
-  </script>
+        // 2. طبقة المدارس
+        loadGeoJSON('https://raghadakare.github.io/Birziet_Schools.json', {
+            pointToLayer: (feature, latlng) => L.marker(latlng, { icon: L.divIcon({ html: "🏫", iconSize: [20, 20] }) }),
+            onEachFeature: (feature, layer) => {
+                layer.bindPopup(`<strong>المدرسة:</strong> ${feature.properties.SchoolNa_1}`);
+            },
+            name: 'المدارس'
+        });
+
+        // 3. طبقة الطرق
+        loadGeoJSON('https://raghadakare.github.io/Birziet_Roads.json', {
+            style: {
+                color: "gray",
+                weight: 2
+            },
+            name: 'الطرق'
+        });
+
+        // 4. طبقة الخدمات
+        loadGeoJSON('https://raghadakare.github.io/Birziet_Facilities.json', {
+            pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
+                radius: 5,
+                fillColor: "green",
+                color: "#000",
+                weight: 1,
+                fillOpacity: 0.8
+            }),
+            onEachFeature: (feature, layer) => {
+                layer.bindPopup(`
+                    <strong>الخدمة:</strong> ${feature.properties.Facility_E}<br>
+                    <strong>التصنيف:</strong> ${feature.properties.Category_E}
+                `);
+            },
+            name: 'الخدمات'
+        });
+
+        // 5. طبقة المكبات
+        loadGeoJSON('https://raghadakare.github.io/Birziet_Dumping.json', {
+            pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
+                radius: 5,
+                fillColor: "red",
+                color: "#000",
+                weight: 1,
+                fillOpacity: 0.8
+            }),
+            onEachFeature: (feature, layer) => {
+                layer.bindPopup(`<strong>المكب:</strong> ${feature.properties.SiteName_E}`);
+            },
+            name: 'المكبات'
+        });
+
+        // 6. طبقة القيمة الزراعية
+        loadGeoJSON('https://raghadakare.github.io/Birziet_Agri.json', {
+            style: {
+                color: "yellow",
+                fillColor: "#ffff99",
+                fillOpacity: 0.6
+            },
+            name: 'القيمة الزراعية'
+        });
+
+        // 7. طبقة تصنيفات الأراضي
+        loadGeoJSON('https://raghadakare.github.io/Birziet_ABC.json', {
+            style: {
+                color: "orange",
+                fillColor: "#ffcc00",
+                fillOpacity: 0.6
+            },
+            onEachFeature: (feature, layer) => {
+                layer.bindPopup(`<strong>تصنيف الأرض:</strong> ${feature.properties.Type}`);
+            },
+            name: 'تصنيفات الأراضي'
+        });
+
+        // تحديث القيم الظاهرة عند تغيير نطاقات المسافة
+        $('#schoolDistance').on('input', function () {
+            $('#schoolDistanceValue').text($(this).val());
+        });
+
+        $('#serviceDistance').on('input', function () {
+            $('#serviceDistanceValue').text($(this).val());
+        });
+
+        // تطبيق الفلاتر
+        $('#applyFilters').on('click', () => {
+            const schoolDistance = $('#schoolDistance').val();
+            const serviceDistance = $('#serviceDistance').val();
+            const roadType = $('#roadType').val();
+
+            alert(`تم تطبيق الفلاتر:
+            - المسافة من المدارس: ${schoolDistance} متر
+            - المسافة من الخدمات: ${serviceDistance} متر
+            - نوع الشارع: ${roadType}`);
+        });
+    </script>
 </body>
-
 </html>
