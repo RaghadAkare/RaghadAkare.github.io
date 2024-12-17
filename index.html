@@ -169,84 +169,116 @@
         // إغلاق نافذة الترحيب عند الضغط على الأزرار
         $('#buy-land-button').on('click', function() {
             $('#welcome-container').fadeOut();
-            loadLandData();
         });
 
         $('#sell-land-button').on('click', function() {
             $('#welcome-container').fadeOut();
-            loadLandData();
         });
 
-        // تحميل البيانات (إشارة إلى أن هذه البيانات من ملف JSON أو قاعدة بيانات)
-        const landData = [
-            {
-                "type": "Feature",
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [[[35.1965, 31.9408], [35.1975, 31.9408], [35.1975, 31.9418], [35.1965, 31.9418], [35.1965, 31.9408]]]
-                },
-                "properties": {
-                    "ParcelNumb": "123",
-                    "BlockNumbe": "B-15",
-                    "price": 45000,
-                    "name_owner": "أحمد محمد",
-                    "phone_num": "0598765432",
-                    "distanceFromSchool": 500,
-                    "distanceFromService": 50,
-                    "agricultureType": "medium",
-                    "roadType": "main",
-                    "transportation": "near",
-                    "wasteDistance": 600,
-                    "serviceType": "restaurant"
-                }
+        // تحميل البيانات من GeoJSON وإضافتها كطبقات
+        const loadGeoJSON = (url, options = {}) => {
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const layer = L.geoJSON(data, options).addTo(map);
+                    if (options.name) {
+                        L.control.layers(null, { [options.name]: layer }).addTo(map);
+                    }
+                })
+                .catch(error => console.error(`Error loading ${url}:`, error));
+        };
+
+        // 1. طبقة الأراضي
+        loadGeoJSON('https://raghadakare.github.io/Birziet_Parcels.json', {
+            style: {
+                color: "black",
+                fillColor: "beige",
+                fillOpacity: 0.7
             },
-            // إضافة المزيد من البيانات حسب الحاجة...
-        ];
-
-        // تنفيذ الفلاتر بعد النقر على "تطبيق الفلاتر"
-        $('#applyFilters').on('click', function() {
-            var schoolDistance = $('#schoolDistance').val();
-            var serviceDistance = $('#serviceDistance').val();
-            var serviceType = $('#serviceType').val();
-            var agricultureType = $('#agricultureType').val();
-            var roadType = $('#roadType').val();
-            var transportation = $('#transportation').val();
-            var wasteDistance = $('#wasteDistance').val();
-
-            // تصفية البيانات
-            var filteredLandData = landData.filter(function(feature) {
-                return feature.properties.distanceFromSchool <= schoolDistance &&
-                       feature.properties.distanceFromService <= serviceDistance &&
-                       feature.properties.agricultureType === agricultureType &&
-                       feature.properties.roadType === roadType &&
-                       feature.properties.transportation === transportation &&
-                       feature.properties.wasteDistance <= wasteDistance &&
-                       feature.properties.serviceType === serviceType;
-            });
-
-            // إذا تم العثور على بيانات مطابقة، عرض المعلومات
-            if (filteredLandData.length > 0) {
-                var land = filteredLandData[0]; // اختيار أول قطعة أرض متوافقة
-
-                // تحديث معلومات الأرض
-                $('#landNumber').text(land.properties.ParcelNumb);
-                $('#ownerName').text(land.properties.name_owner);
-                $('#landPrice').text(`₪ ${land.properties.price}`);
-                $('#ownerPhone').text(land.properties.phone_num);
-
-                // إخفاء نافذة الفلاتر وإظهار نتائج الأرض
-                $('#filter-container').fadeOut();
-                $('#result-container').fadeIn();
-            } else {
-                alert("لا توجد أراضٍ مطابقة للمعايير.");
-            }
+            onEachFeature: (feature, layer) => {
+                layer.bindPopup(`
+                    <strong>رقم القطعة:</strong> ${feature.properties.ParcelNumb}<br>
+                    <strong>المساحة:</strong> ${feature.properties.Shape_Area} م²<br>
+                    <strong>السعر:</strong> ₪${feature.properties.price}
+                `);
+            },
+            name: 'الأراضي'
         });
 
-        // الرجوع إلى الفلاتر
-        $('#backToFilters').on('click', function() {
-            $('#result-container').fadeOut();
-            $('#filter-container').fadeIn();
+        // 2. طبقة المدارس
+        loadGeoJSON('https://raghadakare.github.io/Birziet_Schools.json', {
+            pointToLayer: (feature, latlng) => L.marker(latlng, { icon: L.divIcon({ html: "🏫", iconSize: [20, 20] }) }),
+            onEachFeature: (feature, layer) => {
+                layer.bindPopup(`<strong>المدرسة:</strong> ${feature.properties.SchoolNa_1}`);
+            },
+            name: 'المدارس'
         });
+
+        // 3. طبقة الطرق
+        loadGeoJSON('https://raghadakare.github.io/Birziet_Roads.json', {
+            style: {
+                color: "gray",
+                weight: 2
+            },
+            name: 'الطرق'
+        });
+
+        // 4. طبقة الخدمات
+        loadGeoJSON('https://raghadakare.github.io/Birziet_Facilities.json', {
+            pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
+                radius: 5,
+                fillColor: "green",
+                color: "#000",
+                weight: 1,
+                fillOpacity: 0.8
+            }),
+            onEachFeature: (feature, layer) => {
+                layer.bindPopup(`
+                    <strong>الخدمة:</strong> ${feature.properties.Facility_E}<br>
+                    <strong>التصنيف:</strong> ${feature.properties.Category_E}
+                `);
+            },
+            name: 'الخدمات'
+        });
+
+        // 5. طبقة المكبات
+        loadGeoJSON('https://raghadakare.github.io/Birziet_Dumping.json', {
+            pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
+                radius: 5,
+                fillColor: "red",
+                color: "#000",
+                weight: 1,
+                fillOpacity: 0.8
+            }),
+            onEachFeature: (feature, layer) => {
+                layer.bindPopup(`<strong>المكب:</strong> ${feature.properties.SiteName_E}`);
+            },
+            name: 'المكبات'
+        });
+
+        // 6. طبقة القيمة الزراعية
+        loadGeoJSON('https://raghadakare.github.io/Birziet_Agri.json', {
+            style: {
+                color: "yellow",
+                fillColor: "#ffff99",
+                fillOpacity: 0.6
+            },
+            name: 'القيمة الزراعية'
+        });
+
+        // 7. طبقة تصنيفات الأراضي
+        loadGeoJSON('https://raghadakare.github.io/Birziet_ABC.json', {
+            style: {
+                color: "orange",
+                fillColor: "#ffcc00",
+                fillOpacity: 0.6
+            },
+            onEachFeature: (feature, layer) => {
+                layer.bindPopup(`<strong>تصنيف الأرض:</strong> ${feature.properties.Type}`);
+            },
+            name: 'تصنيفات الأراضي'
+        });
+
     </script>
 </body>
 </html>
