@@ -284,6 +284,20 @@
                 layerControl.addOverlay(parcelsLayer, 'الأراضي');
             });
 
+        // تحميل طبقة الطرق
+        fetch('https://raghadakare.github.io/Birziet_Roads.json')
+            .then(response => response.json())
+            .then(data => {
+                roadsLayer = L.geoJSON(data, {
+                    style: {
+                        color: "black",
+                        weight: 1.5,
+                        dashArray: "5, 5"
+                    }
+                }).addTo(map);
+                layerControl.addOverlay(roadsLayer, 'الطرق');
+            });
+
         // تحميل طبقة المدارس
         fetch('https://raghadakare.github.io/Birziet_Schools.json')
             .then(response => response.json())
