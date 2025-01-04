@@ -48,19 +48,19 @@
             width: 300px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             text-align: center;
-            color: white;
+                    color: white;
         }
         .modal-content h3 {
             margin-bottom: 10px;
             font-size: 18px;
-            color: white;
+                    color: white;
         }
         .modal-content label {
             display: block;
             margin-bottom: 5px;
             text-align: right;
             font-weight: bold;
-            color: white;
+                    color: white;
         }
         .modal-content input, .modal-content select {
             width: calc(100% - 20px);
@@ -154,30 +154,13 @@
             color: black;
             z-index: 1000;
         }
-        .search-rectangle div {
-            color: white;
-        }
-        .result-title {
-            color: white;
-        }
-        .back-button {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #FFD700;
-            color: #1a1a2e;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-            z-index: 10001;
-        }
-        .back-button:hover {
-            background-color: #ffcc00;
-        }
+              .search-rectangle div {
+               color: white;
+          }
+
+            .result-title {
+               color: white;
+         } 
     </style>
 </head>
 <body>
@@ -191,12 +174,16 @@
             <h3>حدد معايير البحث</h3>
             <label for="minArea">المساحة الدنيا (م²)</label>
             <input type="number" id="minArea" placeholder="33" />
+
             <label for="maxArea">المساحة القصوى (م²)</label>
             <input type="number" id="maxArea" placeholder="143281" />
+
             <label for="minPrice">السعر الأدنى (₪)</label>
             <input type="number" id="minPrice" placeholder="10000" />
+
             <label for="maxPrice">السعر الأقصى (₪)</label>
             <input type="number" id="maxPrice" placeholder="460000" />
+
             <label for="roadType">نوع الشارع</label>
             <select id="roadType">
                 <option value="">اختر نوع الشارع</option>
@@ -205,28 +192,33 @@
                 <option value="رئيسي">رئيسي</option>
                 <option value="محلي">محلي</option>
             </select>
+
             <label for="nearFacility">القرب من الخدمات</label>
             <select id="nearFacility">
                 <option value="">اختر</option>
                 <option value="yes">نعم</option>
                 <option value="no">لا</option>
             </select>
+
             <label for="nearSchools">القرب من المدارس</label>
             <select id="nearSchools">
                 <option value="">اختر</option>
                 <option value="yes">نعم</option>
                 <option value="no">لا</option>
             </select>
+
             <label for="nearDumping">القرب من المكبات</label>
             <select id="nearDumping">
                 <option value="">اختر</option>
                 <option value="yes">نعم</option>
                 <option value="no">لا</option>
             </select>
+
             <label for="agriculturalValue">القيمة الزراعية</label>
             <select id="agriculturalValue">
                 <option value="">جارٍ تحميل القيم...</option>
             </select>
+
             <button class="apply-btn" onclick="applyFilters()">تطبيق</button>
             <button class="cancel-btn" onclick="closeFilter()">إلغاء</button>
         </div>
@@ -234,32 +226,41 @@
     <div id="errorMessage" class="error-message">
         لا توجد أراضٍ تناسب معاييرك.
     </div>
+
+    <!-- مستطيل عرض النتائج -->
     <div id="resultContainer" class="result-container">
         <div class="result-title">الأراضي المناسبة لمعاييرك</div>
         <ul id="resultList" class="result-list"></ul>
         <div id="showMore" class="show-more-btn" style="display: none;" onclick="showMore()">عرض المزيد</div>
     </div>
+
     <div class="map-note">
-        B جميع الأراضي المعلنة للبيع هنا تحت التصنيف الجيوسياسي
+         B جميع الأراضي المعلنة للبيع هنا تحت التصنيف الجيوسياسي
     </div>
-    <button class="back-button" onclick="goHome()">🏠 العودة للصفحة الرئيسية</button>
+
     <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-ajax"></script>
     <script>
         const map = L.map('map').setView([31.9416, 35.1975], 13);
+        
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri'
         }).addTo(map);
+        
         const layerControl = L.control.layers(null, null, { collapsed: false }).addTo(map);
+        
         let parcelsLayer, roadsLayer, facilitiesLayer, agriLayer, schoolsLayer, dumpingLayer;
         let agriculturalValues = new Set();
         let allMatchingParcels = [];
+
+        // إضافة طبقة GeoJSON للأراضي
         fetch('https://raghadakare.github.io/Birziet_Parcels.json')
             .then(response => response.json())
             .then(data => {
                 parcelsLayer = L.geoJSON(data, {
                     style: feature => {
                         const parcelType = feature.properties.ParcelNumb;
+                        // استبعاد الأنواع المحددة
                         if (parcelType === "طريق تسوية منتهية" || parcelType === "طريق تسوية غير منتهية" || parcelType === "وادي") {
                             return { color: "transparent", fillOpacity: 0 };
                         }
@@ -282,6 +283,8 @@
                 }).addTo(map);
                 layerControl.addOverlay(parcelsLayer, 'الأراضي');
             });
+
+        // تحميل طبقة المدارس
         fetch('https://raghadakare.github.io/Birziet_Schools.json')
             .then(response => response.json())
             .then(data => {
@@ -293,6 +296,8 @@
                 }).addTo(map);
                 layerControl.addOverlay(schoolsLayer, 'المدارس');
             });
+
+        // تحميل طبقة الخدمات
         fetch('https://raghadakare.github.io/Birziet_Facilities.json')
             .then(response => response.json())
             .then(data => {
@@ -327,6 +332,8 @@
                 }).addTo(map);
                 layerControl.addOverlay(facilitiesLayer, 'الخدمات');
             });
+
+        // إضافة طبقة GeoJSON للمكبات
         fetch('https://raghadakare.github.io/Birziet_Dumping.json')
             .then(response => response.json())
             .then(data => {
@@ -344,6 +351,8 @@
                 }).addTo(map);
                 layerControl.addOverlay(dumpingLayer, 'المكبات');
             });
+
+        // إضافة طبقة القيمة الزراعية
         fetch('https://raghadakare.github.io/Birziet_Agri.json')
             .then(response => response.json())
             .then(data => {
@@ -358,6 +367,7 @@
                     }
                 }).addTo(map);
                 layerControl.addOverlay(agriLayer, 'القيمة الزراعية');
+
                 const uniqueValues = Array.from(agriculturalValues).sort();
                 const agriSelect = document.getElementById('agriculturalValue');
                 agriSelect.innerHTML = '<option value="">اختر</option>'; 
@@ -365,12 +375,15 @@
                     agriSelect.innerHTML += `<option value="${value}">${value}</option>`;
                 });
             });
+
         function openFilter() {
             document.getElementById('filterModal').style.display = 'flex';
         }
+
         function closeFilter() {
             document.getElementById('filterModal').style.display = 'none';
         }
+
         function applyFilters() {
             const minArea = parseFloat(document.getElementById('minArea').value) || 0;
             const maxArea = parseFloat(document.getElementById('maxArea').value) || Infinity;
@@ -381,13 +394,17 @@
             const nearSchools = document.getElementById('nearSchools').value;
             const nearDumping = document.getElementById('nearDumping').value;
             const agriculturalValue = document.getElementById('agriculturalValue').value;
+
             let matchingParcels = [];
+
             parcelsLayer.eachLayer(parcelLayer => {
                 const area = parcelLayer.feature.properties.Shape_Area;
                 const price = parcelLayer.feature.properties.price;
                 const parcelAgriValue = agriLayer.getLayers().find(agriLayer =>
                     agriLayer.getBounds().intersects(parcelLayer.getBounds())
                 )?.feature.properties.Agricultur;
+
+                // تحقق من القرب من الخدمات
                 let nearAnyFacility = nearFacility === "yes"; 
                 if (nearFacility === "no") {
                     nearAnyFacility = !facilitiesLayer.getLayers().some(facilityLayer => {
@@ -397,6 +414,8 @@
                         return distance <= 500; 
                     });
                 }
+
+                // تحقق من القرب من المدارس
                 let nearToSchools = nearSchools === "yes"; 
                 if (nearSchools === "no") {
                     nearToSchools = !schoolsLayer.getLayers().some(schoolLayer => {
@@ -406,6 +425,8 @@
                         return distance <= 5000; 
                     });
                 }
+
+                // تحقق من القرب من المكبات
                 let nearToDumping = nearDumping === "yes"; 
                 if (nearDumping === "no") {
                     nearToDumping = !dumpingLayer.getLayers().some(dumpLayer => {
@@ -415,7 +436,97 @@
                         return distance <= 5000; 
                     });
                 }
+
                 const matchesAgriValue = agriculturalValue === "" || 
                     (agriculturalValue === parcelAgriValue);
                 const parcelType = parcelLayer.feature.properties.ParcelNumb;
-                if (area >=
+                if (area >= minArea && area <= maxArea 
+                    && price >= minPrice && price <= maxPrice 
+                    && nearAnyFacility && nearToSchools && nearToDumping 
+                    && matchesAgriValue 
+                    && !(parcelType === "طريق تسوية منتهية" 
+                         || parcelType === "طريق تسوية غير منتهية" 
+                         || parcelType === "وادي")) {
+    
+                    parcelLayer.setStyle({ fillColor: "blue", fillOpacity: 0.6 });
+                    matchingParcels.push(parcelLayer);
+                } else {
+                    // إزالة القطعة من العرض تمامًا إذا تم استبعادها
+                    parcelLayer.remove();
+                }
+
+            });
+
+            // تخزين جميع النتائج المتطابقة
+            allMatchingParcels = matchingParcels;
+
+            if (matchingParcels.length === 0) {
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('resultContainer').style.display = 'none';
+            } else {
+                document.getElementById('errorMessage').style.display = 'none';
+                displayResults(matchingParcels);
+                document.getElementById('resultContainer').style.display = 'block';
+            }
+
+            closeFilter();
+        }
+
+        let selectedParcel = null; // لتخزين القطعة المختارة
+
+function displayResults(matchingParcels) {
+    const resultList = document.getElementById('resultList');
+    resultList.innerHTML = ''; // تفريغ القائمة السابقة
+    const limitedResults = matchingParcels.slice(0, 20); // فقط أول 20 نتيجة
+
+    // عند إنشاء القائمة الجديدة، إخفاء كل القطع
+    matchingParcels.forEach(parcel => {
+        parcel.setStyle({ opacity: 0 }); // اجعل جميع القطع غير مرئية
+    });
+
+    limitedResults.forEach(parcel => {
+        const listItem = document.createElement('li');
+        listItem.textContent = parcel.feature.properties.ParcelNumb;
+        listItem.onclick = function() {
+            // عند اختيار قطعة:
+            // 1. إخفاء جميع القطع
+            matchingParcels.forEach(p => p.setStyle({ opacity: 0, fillOpacity: 0 }));
+            
+            // 2. عرض القطعة المختارة فقط
+            parcel.setStyle({ fillColor: "blue", fillOpacity: 0.8, opacity: 1 });
+
+            // 3. تكبير الخريطة لتظهر القطعة المختارة في المنتصف
+            map.fitBounds(parcel.getBounds());
+        };
+        resultList.appendChild(listItem);
+    });
+
+    // إذا كان لدينا أكثر من 20 نتيجة، نظهر زر "عرض المزيد"
+    document.getElementById('showMore').style.display = (matchingParcels.length > 20) ? 'block' : 'none';
+}
+
+
+        function showMore() {
+            const resultList = document.getElementById('resultList');
+            resultList.innerHTML = ''; // تفريغ القائمة السابقة
+
+            // عرض جميع النتائج
+            allMatchingParcels.forEach(parcel => {
+                const listItem = document.createElement('li');
+                listItem.textContent = parcel.feature.properties.ParcelNumb;
+                listItem.onclick = function() {
+                    map.setView(parcel.getBounds().getCenter(), 15);
+                    parcel.setStyle({ color: "blue", weight: 3 });
+                };
+                resultList.appendChild(listItem);
+            });
+
+            document.getElementById('showMore').style.display = 'none'; // إخفاء زر "عرض المزيد" بعد الضغط عليه
+        }
+
+        function closeResultModal() {
+            document.getElementById('resultModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
