@@ -204,14 +204,9 @@
         </div>
     </div>
 
-    <!-- محتوى الخريطة (الصفحة الرئيسية) -->
-    <div id="map-page" style="display: none;">
-        <div id="map"></div>
-    </div>
-
-    <!-- واجهة بيع الأرض -->
+    <!-- واجهة بيع الأراضي -->
     <div id="sell-land-page" style="display: none; padding: 20px;">
-        <span class="home-icon" onclick="goHome()">🏠 عد الى الصفحة الرئيسية</span>
+        <span class="home-icon" onclick="goHome()">🏠 عد إلى الصفحة الرئيسية</span>
         <h2>بيع أرض</h2>
         <form>
             <div class="form-group">
@@ -250,18 +245,24 @@
         </form>
     </div>
 
-    <!-- فقرة معلومات عن الشركة -->
     <div class="info-section">
         <h2>عن موقع Invest in Birzeit</h2>
         <p>موقع Invest in Birzeit هو منصة إلكترونية متخصصة في تقديم خدمات بيع وشراء الأراضي في مدينة بيرزيت. نعمل بجد لضمان رضا العملاء وتقديم خيارات استثمارية تلبي تطلعاتهم بفضل فريق عمل محترف وخبرة واسعة.</p>
     </div>
 
+    <!-- واجهة شراء الأرض -->
+    <div id="buy-land-page" style="display: none; padding: 20px;">
+        <span class="home-icon" onclick="goHome()">🏠 عد إلى الصفحة الرئيسية</span>
+        <h2>شراء أرض</h2>
+        <p>الرجاء زيارة الخريطة لاختيار الموقع المناسب للأرض:</p>
+        <div id="map" style="height: 500px;"></div>
+    </div>
+
     <!-- واجهة تواصل معنا -->
     <div id="contact-us-page" style="display: none; text-align: center; padding: 20px;">
-        <span class="home-icon" onclick="goHome()">🏠 عد الى الصفحة الرئيسية</span>
+        <span class="home-icon" onclick="goHome()">🏠 عد إلى الصفحة الرئيسية</span>
         <h2>تواصل معنا</h2>
-        <p>يمكنك التواصل معنا عبر البريد الإلكتروني أو الهاتف:</p>
-        <ul style="list-style-type: none; padding: 0;">
+        <ul>
             <li>
                 <strong>Batool Hammad</strong><br>
                 هاتف: <a href="tel:0597136553">0597136553</a><br>
@@ -290,10 +291,11 @@
     <!-- زر فتح نافذة التعليقات -->
     <button id="open-feedback-btn" onclick="toggleFeedbackModal()">💬</button>
 
-    <!-- تحميل مكتبات JavaScript -->
+    <!-- مكتبات و JavaScript -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://unpkg.com/leaflet-ajax"></script>
 
     <script>
@@ -302,6 +304,17 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
+
+        // تهيئة EmailJS
+        (function () {
+            emailjs.init('eGF3_BfaeQptvj6ox'); // Public Key
+        })();
+
+        // تشغيل الصفحات المناسبة
+        function goHome() {
+            $('#sell-land-page, #contact-us-page').hide();
+            $('.welcome-container').show();
+        }
 
         $(document).ready(function() {
             $('.btn').on('click', function() {
@@ -319,7 +332,10 @@
             $('#contact-us-button').on('click', function() {
                 $('#contact-us-page').show();
             });
+            const map = L.map('map').setView([31.9416, 35.1975], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         });
+
 
         function toggleFeedbackModal() {
             const modal = document.getElementById('feedback-modal');
@@ -342,6 +358,31 @@
             $('#contact-us-page').hide();
             $('.welcome-container').show();
         }
+
+        // إرسال البيانات من نموذج بيع الأراضي
+        document.querySelector('#sell-land-page form').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const formData = {
+                land_specs: document.getElementById('land-specs').value,
+                seller_name: document.getElementById('seller-name').value,
+                seller_phone: document.getElementById('seller-phone').value,
+                expected_price: document.getElementById('expected-price').value,
+                land_location: document.getElementById('land-location').value,
+                land_category: document.getElementById('land-category').value,
+                land_area: document.getElementById('land-area').value,
+            };
+
+            emailjs
+                .send('raghad_29', 'template_3wng3wx', formData)
+                .then(() => {
+                    alert('تم إرسال البيانات بنجاح!');
+                    document.querySelector('#sell-land-page form').reset();
+                })
+                .catch((error) => {
+                    alert('حدث خطأ أثناء إرسال البيانات.');
+                    console.error(error);
+                });
+        });
     </script>
 </body>
 
