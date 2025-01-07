@@ -459,7 +459,7 @@
                         const schoolLatLng = schoolLayer.getLatLng();
                         const parcelCenter = parcelLayer.getBounds().getCenter();
                         const distance = parcelCenter.distanceTo(schoolLatLng);
-                        return distance <= 5000; 
+                        return distance <= 500; 
                     });
                 }
 
