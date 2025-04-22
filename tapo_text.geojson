@@ -1,0 +1,4 @@
+{
+  "type" : "FeatureCollection",
+  "features" : [{"type":"Feature","id":0,"geometry":{"type":"Point","coordinates":[35.16514032296579,32.062764350739165]},"properties":{"FID":0,"Entity":"Text","Handle":"57C","Layer":"NAME","LyrFrzn":0,"LyrOn":1,"Color":224,"Linetype":"Continuous","Elevation":0,"LineWt":25,"RefName":"43","DocUpdate":1743811200000,"DocId":1.64506842616e+19,"Style":"5mm","Text":"43","TxtAngle":0}}]
+}
