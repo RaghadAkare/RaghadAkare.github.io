@@ -101,14 +101,13 @@
 <div class="buffer-panel" id="buffer-panel">
   <h4>تحليل اقتطاع الطريق</h4>
   <label>اختر عرض البفر (متر):</label>
-  <select id="buffer-width">
-    <option value="6">6</option>
-    <option value="8">8</option>
-    <option value="10">10</option>
-    <option value="12">12</option>
-    <option value="14">14</option>
-    <option value="16">16</option>
-  </select>
+<select id="buffer-width">
+  <option value="2">2</option>
+  <option value="4">4</option>
+  <option value="6">6</option>
+  <option value="8">8</option>
+</select>
+
   <button onclick="applyBuffer()">تطبيق البفر</button>
   <button id="reset-btn" onclick="resetAnalysis()" style="background:#ccc;color:#000;margin-top:5px;display:none">إعادة التعيين</button>
 </div>
@@ -450,6 +449,8 @@ function toggleSearchPanel() {
 var legend = L.control({ position: 'bottomright' });
 legend.onAdd = function (map) {
   const div = L.DomUtil.create('div', 'legend');
+  div.style.marginBottom = '40px'; // ✨ ارفع المفتاح لفوق شوي
+
   div.innerHTML += "<b>عرض الطرق بالمتر</b><br>";
   const widths = [
     { color: '#ffff00', label: '4 م' },
@@ -460,11 +461,37 @@ legend.onAdd = function (map) {
     { color: '#ff0000', label: '14 م أو أكثر' }
   ];
   widths.forEach(w => {
-    div.innerHTML += `<div style=\"display: flex; align-items: center; margin-bottom: 4px;\"><div style=\"width: 30px; height: 2px; background:${w.color}; margin-left: 6px;\"></div><span>${w.label}</span></div>`;
+    div.innerHTML += `<div style="display: flex; align-items: center; margin-bottom: 4px;">
+                        <div style="width: 30px; height: 2px; background:${w.color}; margin-left: 6px;"></div>
+                        <span>${w.label}</span>
+                      </div>`;
   });
+
   return div;
 };
 legend.addTo(map);
+
+// ✅ ملاحظة ثابتة بأسفل يمين الخريطة (خارج تحكم Leaflet)
+const noteDiv = document.createElement('div');
+noteDiv.id = 'buffer-note';
+noteDiv.innerHTML = `⚠️ <strong>يرجى الملاحظة</strong> أنه يجب الضغط على الطريق المراد فحص التوسعة المحتملة فيها (<strong>Buffer Zone</strong>).`;
+
+// 🎨 تنسيقات CSS مباشرة
+noteDiv.style.position = 'absolute';
+noteDiv.style.bottom = '10px';
+noteDiv.style.right = '10px';
+noteDiv.style.background = 'white';
+noteDiv.style.border = '1px solid #ccc';
+noteDiv.style.borderRadius = '6px';
+noteDiv.style.padding = '8px 12px';
+noteDiv.style.fontSize = '13px';
+noteDiv.style.boxShadow = '0 0 5px rgba(0,0,0,0.3)';
+noteDiv.style.zIndex = '1000';
+
+document.body.appendChild(noteDiv);
+
+
+
 // زر إظهار/إخفاء صندوق الطبقات
 document.getElementById('layer-toggle').addEventListener('click', () => {
   const box = document.querySelector('.leaflet-control-layers');
