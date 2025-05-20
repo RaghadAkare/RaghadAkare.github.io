@@ -1,583 +1,526 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>استثمارك في بيرزيت</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
-    <style>
-        #map {
-            height: 100vh;
-        }
-        .search-rectangle {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            width: 250px;
-            background-color: #000066;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            font-family: Arial, sans-serif;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .search-rectangle:hover {
-            background-color: #ADD8E6;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background: #000066;
-            padding: 10px;
-            border-radius: 8px;
-            width: 300px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            color: white;
-        }
-        .modal-content h3 {
-            margin-bottom: 10px;
-            font-size: 18px;
-            color: white;
-        }
-        .modal-content label {
-            display: block;
-            margin-bottom: 5px;
-            text-align: right;
-            font-weight: bold;
-            color: white;
-        }
-        .modal-content input, .modal-content select {
-            width: calc(100% - 20px);
-            margin-bottom: 10px;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .modal-content button {
-            padding: 6px 10px;
-            margin: 5px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .apply-btn {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .cancel-btn {
-            background-color: #000066;
-            color: White;
-        }
-        .error-message {
-            display: none;
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: white;
-            border: 2px solid red;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            color: red;
-            text-align: center;
-            z-index: 3000;
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.1);
-        }
-        .result-container {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            width: 250px;
-            background-color: #000066;
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 1000;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-            display: none; /* اللحظة هذه مفعلة عند وجود نتائج */
-        }
-        .result-title {
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: white;
-        }
-        .result-list {
-            list-style-type: none;
-            padding: 0;
-            max-height: 150px;
-            overflow-y: auto;
-            text-align: center;
-        }
-        .result-list li {
-            margin: 5px 0;
-            cursor: pointer;
-            color: White;
-            text-decoration: underline;
-        }
-        .result-list li:hover {
-            color: #000066;
-        }
-        .show-more-btn {
-            cursor: pointer;
-            color: #007bff;
-            text-decoration: underline;
-            text-align: center;
-        }
-        .map-note {
-            position: absolute;
-            bottom: 10px;
-            right: 20px;
-            background-color: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-            font-size: 14px;
-            color: black;
-            z-index: 1000;
-        }
-        .search-rectangle div {
-            color: white;
-        }
-        #go-home-button {
-            position: fixed;
-            top: 20px;
-            right: 3%;
-            transform: translateX(-50%);
-            background-color: #FFD700;
-            color: #1a1a2e;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 10px;
-            font-size: 1rem;
-            cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-            z-index: 10001;
-        }
-
-        #go-home-button:hover {
-            background-color: #ffcc00;
-        }
-    </style>
-</head>
-<body>
-    <div id="map"></div>
-    <div class="search-rectangle" onclick="openFilter()">
-        <div class="icon">🔍</div>
-        <div>حدد معاييرك هنا</div>
-    </div>
-    <div id="filterModal" class="modal">
-        <div class="modal-content">
-            <h3>حدد معايير البحث</h3>
-            <label for="minArea">* المساحة الدنيا (م²)</label>
-            <input type="number" id="minArea" placeholder="33" />
-
-            <label for="maxArea">* المساحة القصوى (م²)</label>
-            <input type="number" id="maxArea" placeholder="143281" />
-
-            <label for="minPrice">* السعر الأدنى (₪)</label>
-            <input type="number" id="minPrice" placeholder="10000" />
-
-            <label for="maxPrice">* السعر الأقصى (₪)</label>
-            <input type="number" id="maxPrice" placeholder="460000" />
-
-            <label for="roadType">* نوع الشارع</label>
-            <select id="roadType">
-                <option value="">اختر نوع الشارع</option>
-                <option value="إقليمي">إقليمي</option>
-                <option value="داخلي">داخلي</option>
-                <option value="رئيسي">رئيسي</option>
-                <option value="محلي">محلي</option>
-            </select>
-
-            <label for="nearFacility">*القرب من الخدمات </label>
-            <select id="nearFacility">
-                <option value="">اختر</option>
-                <option value="yes">نعم</option>
-                <option value="no">لا</option>
-            </select>
-
-            <label for="nearSchools">* القرب من المدارس </label>
-            <select id="nearSchools">
-                <option value="">اختر</option>
-                <option value="yes">نعم</option>
-                <option value="no">لا</option>
-            </select>
-
-            <label for="nearDumping"> * القرب من المكبات </label>
-            <select id="nearDumping">
-                <option value="">اختر</option>
-                <option value="yes">نعم</option>
-                <option value="no">لا</option>
-            </select>
-
-            <label for="agriculturalValue">* القيمة الزراعية</label>
-            <select id="agriculturalValue">
-                <option value="">جارٍ تحميل القيم...</option>
-            </select>
-
-            <button class="apply-btn" onclick="applyFilters()">تطبيق</button>
-            <button class="cancel-btn" onclick="closeFilter()">إلغاء</button>
-        </div>
-    </div>
-    <div id="errorMessage" class="error-message">
-        لا توجد أراضٍ تناسب معاييرك.
-    </div>
-
-    <!-- مستطيل عرض النتائج -->
-    <div id="resultContainer" class="result-container">
-        <div class="result-title">الأراضي المناسبة لمعاييرك</div>
-        <ul id="resultList" class="result-list"></ul>
-        <div id="showMore" class="show-more-btn" style="display: none;" onclick="showMore()">عرض المزيد</div>
-    </div>
-
-    <div class="map-note">
-         B جميع الأراضي المعلنة للبيع هنا تحت التصنيف الجيوسياسي
-    </div>
-
-    <!-- زر الرجوع للصفحة الرئيسية -->
-    <button id="go-home-button" class="home-icon" onclick="goHome()">🏠 عد إلى الصفحة الرئيسية</button>
-
-    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-ajax"></script>
-    <script>
-    function goHome() {
-        window.location.href = 'https://raghadakare.github.io/'; // استبدل هذا بمسار صفحة الترحيب
+  <meta charset="UTF-8">
+  <title>تحليل اقتطاع الطرق - مزارع النوباني</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <style>
+    #map {
+      height: 100vh;
     }
 
-        const map = L.map('map').setView([31.9416, 35.1975], 13);
-        
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri'
-        }).addTo(map);
-        
-        const layerControl = L.control.layers(null, null, { collapsed: false }).addTo(map);
-        
-        let parcelsLayer, roadsLayer, facilitiesLayer, agriLayer, schoolsLayer, dumpingLayer;
-        let agriculturalValues = new Set();
-        let allMatchingParcels = [];
+    .buffer-panel {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: #fff;
+      padding: 15px;
+      border: 2px solid #004d66;
+      border-radius: 8px;
+      width: 260px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 1001;
+      display: none;
+    }
 
-        // إضافة طبقة GeoJSON للأراضي
-        fetch('https://raghadakare.github.io/Birziet_Parcels.json')
-            .then(response => response.json())
-            .then(data => {
-                parcelsLayer = L.geoJSON(data, {
-                    style: feature => {
-                        const parcelType = feature.properties.ParcelNumb;
-                        // استبعاد الأنواع المحددة
-                        if (parcelType === "طريق تسوية منتهية" || parcelType === "طريق تسوية غير منتهية" || parcelType === "وادي") {
-                            return { color: "transparent", fillOpacity: 0 };
-                        }
-                        return {
-                            color: "gray",
-                            weight: 1,
-                            fillColor: "#f5e8d0",
-                            fillOpacity: 0.6
-                        };
-                    },
-                    onEachFeature: (feature, layer) => {
-                        layer.bindPopup(` 
-                            <strong>رقم القطعة:</strong> ${feature.properties.ParcelNumb}<br>
-                            <strong>المساحة:</strong> ${feature.properties.Shape_Area} م²<br>
-                            <strong>السعر:</strong> ₪${feature.properties.price}<br>
-                            <strong>اسم البائع:</strong> ${feature.properties.name_owner}<br>
-                            <strong>رقم الهاتف:</strong> ${feature.properties.phone_num}
-                        `);
-                    }
-                }).addTo(map);
-                layerControl.addOverlay(parcelsLayer, 'الأراضي');
-            });
+    .buffer-panel h4 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      color: #004d66;
+    }
 
-        // تحميل طبقة الطرق
-        fetch('https://raghadakare.github.io/Birziet_Roads.json')
-            .then(response => response.json())
-            .then(data => {
-                roadsLayer = L.geoJSON(data, {
-                    style: {
-                        color: "black",
-                        weight: 1.5,
-                        dashArray: "5, 5"
-                    }
-                }).addTo(map);
-                layerControl.addOverlay(roadsLayer, 'الطرق');
-            });
+    .buffer-panel select,
+    .buffer-panel button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 6px;
+      border-radius: 4px;
+    }
 
-        // تحميل طبقة المدارس
-        fetch('https://raghadakare.github.io/Birziet_Schools.json')
-            .then(response => response.json())
-            .then(data => {
-                schoolsLayer = L.geoJSON(data, {
-                    pointToLayer: (feature, latlng) => L.marker(latlng, { icon: L.divIcon({ html: "🏫", iconSize: [20, 20] }) }),
-                    onEachFeature: (feature, layer) => {
-                        layer.bindPopup(`<strong>المدرسة:</strong> ${feature.properties.SchoolNa_1}`);
-                    }
-                }).addTo(map);
-                layerControl.addOverlay(schoolsLayer, 'المدارس');
-            });
+    .buffer-panel button {
+      background-color: #004d66;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
 
-        // تحميل طبقة الخدمات
-        fetch('https://raghadakare.github.io/Birziet_Facilities.json')
-            .then(response => response.json())
-            .then(data => {
-                facilitiesLayer = L.geoJSON(data, {
-                    pointToLayer: (feature, latlng) => {
-                        const facilityIcons = {
-                            "Bank": "🏦",
-                            "Building": "🏢",
-                            "Cemetery": "⚰️",
-                            "College": "🏫",
-                            "Fire station": "🚒",
-                            "Fuel": "⛽",
-                            "Gymnastics": "🤸",
-                            "Hospital": "🏥",
-                            "Multi sport": "⚽",
-                            "Park": "🌳",
-                            "Pharmacy": "💊",
-                            "Place of Worship": "🕌",
-                            "Restaurant": "🍴",
-                            "School": "🎓",
-                            "Sports Center": "🏋️‍♂️",
-                            "Taxi": "🚕",
-                            "Townhall": "🏛️",
-                            "University": "🎓"
-                        };
-                        const iconHtml = facilityIcons[feature.properties.Facility_E.split(":")[0]] || "❓";
-                        return L.marker(latlng, { icon: L.divIcon({ html: iconHtml, className: "facility-icon", iconSize: [20, 20] }) });
-                    },
-                    onEachFeature: (feature, layer) => {
-                        layer.bindPopup(`<strong>الخدمة:</strong> ${feature.properties.Facility_E}`);
-                    }
-                }).addTo(map);
-                layerControl.addOverlay(facilitiesLayer, 'الخدمات');
-            });
+    #loading-indicator {
+      display: none !important;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
 
-        // إضافة طبقة GeoJSON للمكبات
-        fetch('https://raghadakare.github.io/Birziet_Dumping.json')
-            .then(response => response.json())
-            .then(data => {
-                dumpingLayer = L.geoJSON(data, {
-                    pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
-                        radius: 6,
-                        fillColor: "red",
-                        color: "darkred",
-                        weight: 1,
-                        fillOpacity: 0.8
-                    }),
-                    onEachFeature: (feature, layer) => {
-                        layer.bindPopup(`<strong>المكب:</strong> ${feature.properties.SiteName_E}`);
-                    }
-                }).addTo(map);
-                layerControl.addOverlay(dumpingLayer, 'المكبات');
-            });
 
-        // إضافة طبقة القيمة الزراعية
-        fetch('https://raghadakare.github.io/Birziet_Agri.json')
-            .then(response => response.json())
-            .then(data => {
-                agriLayer = L.geoJSON(data, {
-                    style: {
-                        color: "#d9c4a1",
-                        fillColor: "gray",
-                        fillOpacity: 0.6
-                    },
-                    onEachFeature: (feature) => {
-                        agriculturalValues.add(feature.properties.Agricultur);
-                    }
-                }).addTo(map);
-                layerControl.addOverlay(agriLayer, 'القيمة الزراعية');
+    .legend {
+      background: white;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
 
-                const uniqueValues = Array.from(agriculturalValues).sort();
-                const agriSelect = document.getElementById('agriculturalValue');
-                agriSelect.innerHTML = '<option value="">اختر</option>'; 
-                uniqueValues.forEach(value => {
-                    agriSelect.innerHTML += `<option value="${value}">${value}</option>`;
-                });
-            });
+    /* ✅ زر طبقات المشروع */
+    #layer-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 1002;
+      background-color: #004d66;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
 
-        function openFilter() {
-            document.getElementById('filterModal').style.display = 'flex';
-        }
+    /* ✅ تصميم إضافي عند الحاجة */
+    #layer-box {
+      position: absolute;
+      top: 70px;
+      right: 20px;
+      z-index: 1001;
+      background: white;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.3);
+      display: none;
+    }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<button id="layer-toggle">طبقات المشروع</button>
+<div class="buffer-panel" id="buffer-panel">
+  <h4>تحليل اقتطاع الطريق</h4>
+  <label>اختر عرض البفر (متر):</label>
+  <select id="buffer-width">
+    <option value="6">6</option>
+    <option value="8">8</option>
+    <option value="10">10</option>
+    <option value="12">12</option>
+    <option value="14">14</option>
+    <option value="16">16</option>
+  </select>
+  <button onclick="applyBuffer()">تطبيق البفر</button>
+  <button id="reset-btn" onclick="resetAnalysis()" style="background:#ccc;color:#000;margin-top:5px;display:none">إعادة التعيين</button>
+</div>
+<!-- زر فتح نافذة البحث -->
+<div id="search-toggle" style="position:absolute; top:70px; right:20px; z-index:1001;">
+  <button onclick="toggleSearchPanel()" style="background:#004d66; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:bold;">ابحث عن قطعة أرضك</button>
+</div>
+<!-- نافذة البحث -->
+<div id="search-panel" style="display:none; position:absolute; top:120px; right:20px; background:white; padding:15px; border:2px solid #004d66; border-radius:8px; width:260px; z-index:1001;">
+  <h4 style="margin-top:0; color:#004d66;">اختر رقم القطعة:</h4>
+  <select id="parcel-select" style="width:100%; padding:6px; border-radius:4px;"></select>
+  <button onclick="searchParcel()" style="margin-top:8px; width:100%; background:#004d66; color:white; padding:8px; border:none; border-radius:4px;">بحث</button>
+  <button onclick="resetSearch()" style="margin-top:5px; width:100%; background:#ccc; color:black; padding:8px; border:none; border-radius:4px;">إعادة التعيين</button>
+</div>
+<div id="loading-indicator">جاري التحميل... <span id="layers-loaded">0</span>/6</div>
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+<script>
+const map = L.map('map').setView([32.0264, 35.1331], 15);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: '© ESRI World Imagery'
+}).addTo(map);
+const layerControl = L.control.layers(null, null, { collapsed: false }).addTo(map);
+// 👇 إنشاء صندوق جديد يلف قائمة الطبقات للتحكم فيه بالزر
+const layerBox = document.createElement('div');
+layerBox.id = 'layer-box';
+document.body.appendChild(layerBox);
 
-        function closeFilter() {
-            document.getElementById('filterModal').style.display = 'none';
-        }
+// 👇 حرك قائمة الطبقات داخل الصندوق
+const layersControlElement = document.querySelector('.leaflet-control-layers');
+layerBox.appendChild(layersControlElement);
 
-        function applyFilters() {
-            const minArea = parseFloat(document.getElementById('minArea').value) || 0;
-            const maxArea = parseFloat(document.getElementById('maxArea').value) || Infinity;
-            const minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
-            const maxPrice = parseFloat(document.getElementById('maxPrice').value) || Infinity;
-            const roadType = document.getElementById('roadType').value;
-            const nearFacility = document.getElementById('nearFacility').value;
-            const nearSchools = document.getElementById('nearSchools').value;
-            const nearDumping = document.getElementById('nearDumping').value;
-            const agriculturalValue = document.getElementById('agriculturalValue').value;
+// 👇 تحكم بالعرض والإخفاء عند الضغط على الزر
+document.getElementById('layer-toggle').addEventListener('click', () => {
+  const box = document.getElementById('layer-box');
+  box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+});
 
-            let matchingParcels = [];
+let loadedLayers = 0;
+let parcelsLayer, selectedRoadFeature, roadLayer, bufferLayer;
+let originalStyles = new Map();
+let highlightedParcels = [];
+function updateLoading() {
+  document.getElementById('layers-loaded').textContent = loadedLayers;
+  if (loadedLayers >= 6) document.getElementById('loading-indicator').style.display = 'none';
+}
+function getColor(width) {
+  return width <= 4 ? '#ffff00' :
+         width <= 6 ? '#ffd700' :
+         width <= 8 ? '#ffa500' :
+         width <= 10 ? '#ff8c00' :
+         width <= 12 ? '#ff4500' :
+         '#ff0000';
+}
+fetch('https://cdn.jsdelivr.net/gh/RaghadAkare/RaghadAkare.github.io/Parcels.geojson')
+  .then(res => res.json())
+  .then(data => {
+    parcelsLayer = L.geoJSON(data, {
+      style: { color: "#996633", weight: 1, fillColor: "#f5f5dc", fillOpacity: 0.6 },
+      onEachFeature: (feature, layer) => {
+        originalStyles.set(layer._leaflet_id, { color: "#996633", weight: 1, fillColor: "#f5f5dc", fillOpacity: 0.6 });
+        const id = feature.properties.ParcelNumb || '-';
+        const blockNum = feature.properties.BlockNumbe || '-';
+        const blockName = feature.properties.BlockName_ || '-';
+        layer.bindPopup(`رقم القطعة: ${id}<br>رقم الحوض: ${blockNum}<br>اسم الحوض: ${blockName}`);
+      }
+    }).addTo(map);
 
-            parcelsLayer.eachLayer(parcelLayer => {
-                const area = parcelLayer.feature.properties.Shape_Area;
-                const price = parcelLayer.feature.properties.price;
-                const parcelAgriValue = agriLayer.getLayers().find(agriLayer =>
-                    agriLayer.getBounds().intersects(parcelLayer.getBounds())
-                )?.feature.properties.Agricultur;
+    layerControl.addOverlay(parcelsLayer, 'قطع أراضي التوسع');
+    populateParcelDropdown();
+    loadedLayers++;
+    updateLoading();
 
-                // تحقق من القرب من الخدمات
-                let nearAnyFacility = nearFacility === "yes"; 
-                if (nearFacility === "no") {
-                    nearAnyFacility = !facilitiesLayer.getLayers().some(facilityLayer => {
-                        const facilityLatLng = facilityLayer.getLatLng();
-                        const parcelCenter = parcelLayer.getBounds().getCenter();
-                        const distance = parcelCenter.distanceTo(facilityLatLng);
-                        return distance <= 500; 
-                    });
-                }
+    // ✅ هذا السطر الإضافي هو اللي بيشغّل عرض المزيد:
+    document.getElementById('parcel-select').addEventListener('change', function () {
+      if (this.value === 'more') {
+        showAllParcels();
+      }
+    });
+  });
 
-                // تحقق من القرب من المدارس
-                let nearToSchools = nearSchools === "yes"; 
-                if (nearSchools === "no") {
-                    nearToSchools = !schoolsLayer.getLayers().some(schoolLayer => {
-                        const schoolLatLng = schoolLayer.getLatLng();
-                        const parcelCenter = parcelLayer.getBounds().getCenter();
-                        const distance = parcelCenter.distanceTo(schoolLatLng);
-                        return distance <= 500; 
-                    });
-                }
-
-                // تحقق من القرب من المكبات
-                let nearToDumping = nearDumping === "yes"; 
-                if (nearDumping === "no") {
-                    nearToDumping = !dumpingLayer.getLayers().some(dumpLayer => {
-                        const dumpLatLng = dumpLayer.getLatLng();
-                        const parcelCenter = parcelLayer.getBounds().getCenter();
-                        const distance = parcelCenter.distanceTo(dumpLatLng);
-                        return distance <= 500; 
-                    });
-                }
-
-                const matchesAgriValue = agriculturalValue === "" || 
-                    (agriculturalValue === parcelAgriValue);
-                const parcelType = parcelLayer.feature.properties.ParcelNumb;
-                if (area >= minArea && area <= maxArea 
-                    && price >= minPrice && price <= maxPrice 
-                    && nearAnyFacility && nearToSchools && nearToDumping 
-                    && matchesAgriValue 
-                    && !(parcelType === "طريق تسوية منتهية" 
-                         || parcelType === "طريق تسوية غير منتهية" 
-                         || parcelType === "وادي")) {
+fetch('https://cdn.jsdelivr.net/gh/RaghadAkare/RaghadAkare.github.io/mazari.geojson')
+  .then(res => res.json())
+  .then(data => {
+    const layer = L.geoJSON(data, { style: { color: "brown", weight: 2, fill: false } }).addTo(map);
+    layerControl.addOverlay(layer, 'أراضي القرية');
+    loadedLayers++;
+    updateLoading();
+  });
+fetch('https://raw.githubusercontent.com/RaghadAkare/RaghadAkare.github.io/main/Roads.geojson')
+  .then(res => res.json())
+  .then(data => {
+    roadLayer = L.geoJSON(data, {
+      style: f => {
+        const w = parseFloat(f.properties.width);
+        return { color: getColor(w), weight: 2, dashArray: "3,3", fill: true, fillOpacity: 0.01 };
+      },
+      onEachFeature: (feature, layer) => {
+        layer.on('click', () => {
+          selectedRoadFeature = feature;
+          document.getElementById('buffer-panel').style.display = 'block';
+        });
+      }
+    }).addTo(map);
+    layerControl.addOverlay(roadLayer, 'شبكة طرق التوسع');
+    loadedLayers++;
+    updateLoading();
+  });
+fetch('https://cdn.jsdelivr.net/gh/RaghadAkare/RaghadAkare.github.io@main/Ump_expansion.geojson')
+  .then(res => {
+    if (!res.ok) throw new Error('🚨 فشل التحميل');
+    return res.json();
+  })
+  .then(data => {
+    const expansionLayer = L.geoJSON(data, {
+      style: { color: "blue", weight: 2, dashArray: "5,5", fill: false }
+    }).addTo(map);
     
-                    parcelLayer.setStyle({ fillColor: "blue", fillOpacity: 0.6 });
-                    matchingParcels.push(parcelLayer);
-                } else {
-                    // إزالة القطعة من العرض تمامًا إذا تم استبعادها
-                    parcelLayer.remove();
-                }
+    layerControl.addOverlay(expansionLayer, 'حدود التوسعة');
+    loadedLayers++;
+    updateLoading();
+    console.log('✅ تمت إضافة حدود التوسعة!');
+  })
+  .catch(err => console.error('❌ حصل خطأ:', err));
+fetch('https://cdn.jsdelivr.net/gh/RaghadAkare/RaghadAkare.github.io/roads_inside.geojson')
+  .then(res => res.json())
+  .then(data => {
+    const layer = L.geoJSON(data, {
+      style: f => {
+        const w = parseFloat(f.properties.width);
+        return { color: getColor(w), weight: 2, fill: false };
+      }
+    }).addTo(map);
+    layerControl.addOverlay(layer, 'الشوارع الداخلية');
+    loadedLayers++;
+    updateLoading();
+  });
+const others = [
+  ['roads_network.geojson', 'شبكة الطرق', { color: "black", weight: 2, dashArray: "5,5", fill: false }],
+  ['Ump_blocks.geojson', 'أحواض المخطط الهيكلي', { color: "lightgreen", weight: 2, fill: false }],
+  ['boundry_master.geojson', 'حدود المخطط الهيكلي', { color: "blue", weight: 2, fill: false }],
+  ['tapo_bocks.geojson', 'أحواض الطابو', { color: "orange", weight: 2, fill: false }],
+  ['objection.geojson', 'أراضي الاعتراض', { color: "purple", weight: 2, dashArray: "5,5", fill: false }]
+];
+others.forEach(([file, name, style]) => {
+  fetch('https://cdn.jsdelivr.net/gh/RaghadAkare/RaghadAkare.github.io/' + file)
+    .then(res => res.json())
+    .then(data => {
+      const layer = L.geoJSON(data, { style });
+      layerControl.addOverlay(layer, name);
+    });
+});
+function applyBuffer() {
+  const width = parseFloat(document.getElementById('buffer-width').value);
+  if (!selectedRoadFeature || isNaN(width)) return;
 
-            });
+  if (bufferLayer) map.removeLayer(bufferLayer);
 
-            // تخزين جميع النتائج المتطابقة
-            allMatchingParcels = matchingParcels;
+  const buffer = turf.buffer(selectedRoadFeature, width / 2, { units: 'meters' });
+  bufferLayer = L.geoJSON(buffer, { style: { color: 'blue', weight: 1, fillOpacity: 0.1 } }).addTo(map);
 
-            if (matchingParcels.length === 0) {
-                document.getElementById('errorMessage').style.display = 'block';
-                document.getElementById('resultContainer').style.display = 'none';
-            } else {
-                document.getElementById('errorMessage').style.display = 'none';
-                displayResults(matchingParcels);
-                document.getElementById('resultContainer').style.display = 'block';
-            }
+  parcelsLayer.eachLayer(layer => {
+    const parcel = layer.feature;
+    const parcelPolygon = parcel.geometry;
+    const intersection = turf.intersect(buffer, parcel);
+    const num = parcel.properties.ParcelNumb || "-";
+    const block = parcel.properties.BlockNumbe || "-";
+    const name = parcel.properties.BlockName_ || "-";
 
-            closeFilter();
-        }
+    const original = originalStyles.get(layer._leaflet_id);
 
-        // ... كود التهيئة وتحميل الطبقات 
-        let selectedParcel = null; // لتخزين القطعة المختارة
+    if (intersection) {
+      const cutArea = turf.area(intersection);
+      const parcelArea = turf.area(parcel);
+      const ratio = (cutArea / parcelArea) * 100;
 
-        function displayResults(matchingParcels) {
-            const resultList = document.getElementById('resultList');
-            resultList.innerHTML = ''; // تفريغ القائمة السابقة
-            const limitedResults = matchingParcels.slice(0, 20); // فقط أول 20 نتيجة
+      // نحاول نحسب أكبر مسافة بين الحواف المتبقية
+      const bbox = turf.bbox(intersection); // [minX, minY, maxX, maxY]
+      const estimatedWidth = turf.distance(
+        [bbox[0], (bbox[1] + bbox[3]) / 2],
+        [bbox[2], (bbox[1] + bbox[3]) / 2],
+        { units: 'meters' }
+      );
 
-            limitedResults.forEach(parcel => {
-                const listItem = document.createElement('li');
-                listItem.textContent = parcel.feature.properties.ParcelNumb;
-                listItem.onclick = function() {
-                    // عند اختيار قطعة:
-                    // 1. إخفاء جميع القطع
-                    matchingParcels.forEach(p => p.setStyle({ opacity: 0, fillOpacity: 0 }));
+      let popup = `رقم القطعة: ${num}<br>رقم الحوض: ${block}<br>اسم الحوض: ${name}<br>`;
+      popup += `📐 نسبة الاقتطاع: ${ratio.toFixed(1)}%<br>`;
+      popup += `📏 العرض المتبقي التقريبي: ${estimatedWidth.toFixed(1)} م<br>`;
 
-                    // 2. عرض القطعة المختارة فقط
-                    parcel.setStyle({ fillColor: "blue", fillOpacity: 0.8, opacity: 1 });
+      if (ratio > 30 && estimatedWidth < 12) {
+        layer.setStyle({ color: '#FFD700', fillColor: '#FFD700' }); // أصفر
+        popup += `⚠️ الحالة: اقتطاع كبير + عرض أقل من 12م`;
+      } else if (ratio > 30) {
+        layer.setStyle({ color: '#cc0000', fillColor: '#cc0000' }); // أحمر
+        popup += `🚧 الحالة: اقتطاع كبير`;
+      } else if (estimatedWidth < 12) {
+        layer.setStyle({ color: 'blue', fillColor: 'blue' }); // أزرق
+        popup += `🔵 الحالة: عرض أقل من 12م`;
+      } else {
+        layer.setStyle(original);
+        popup += `✅ الحالة: آمن`;
+      }
 
-                    // 3. تكبير الخريطة لتظهر القطعة المختارة في المنتصف
-                    map.fitBounds(parcel.getBounds());
+      layer.bindPopup(popup);
+    } else {
+      layer.setStyle(original);
+      layer.bindPopup(`رقم القطعة: ${num}<br>رقم الحوض: ${block}<br>اسم الحوض: ${name}`);
+    }
+  });
 
-                    // 4. تخزين القطعة المختارة
-                    selectedParcel = parcel;
-                };
-                resultList.appendChild(listItem);
-            });
+  document.getElementById('reset-btn').style.display = 'block';
+showBufferLegend();
+}
 
-            // إذا كان لدينا أكثر من 20 نتيجة، نظهر زر "عرض المزيد"
-            document.getElementById('showMore').style.display = (matchingParcels.length > 20) ? 'block' : 'none';
-        }
 
-        function showMore() {
-            const resultList = document.getElementById('resultList');
-            resultList.innerHTML = ''; // تفريغ القائمة السابقة
+function resetAnalysis() {
+  if (bufferLayer) {
+    map.removeLayer(bufferLayer);
+    bufferLayer = null;
+  }
+  selectedRoadFeature = null;
+  parcelsLayer.eachLayer(layer => {
+    const original = originalStyles.get(layer._leaflet_id);
+    if (original) {
+      layer.setStyle(original);
+    } else {
+      layer.setStyle({ color: '#996633', weight: 1, fillColor: '#f5f5dc', fillOpacity: 0.6 });
+    }
+    const f = layer.feature;
+    layer.bindPopup(`رقم القطعة: ${f.properties.ParcelNumb || "-"}<br>رقم الحوض: ${f.properties.BlockNumbe || "-"}<br>اسم الحوض: ${f.properties.BlockName_ || "-"}`);
+  });
+  document.getElementById('reset-btn').style.display = 'none';
+  document.getElementById('buffer-panel').style.display = 'none';
+hideBufferLegend();
+}
+function toggleSearchPanel() {
+  const panel = document.getElementById('search-panel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+let allParcels = []; // لتخزين كل الأرقام
+let loadedParcels = false;
 
-            // عرض جميع النتائج
-            allMatchingParcels.forEach(parcel => {
-                const listItem = document.createElement('li');
-                listItem.textContent = parcel.feature.properties.ParcelNumb;
-                listItem.onclick = function() {
-                    // عند اختيار قطعة:
-                    // 1. إخفاء جميع القطع
-                    allMatchingParcels.forEach(p => p.setStyle({ opacity: 0, fillOpacity: 0 }));
+function populateParcelDropdown() {
+  const select = document.getElementById('parcel-select');
+  select.innerHTML = '';
+  allParcels = [];
 
-                    // 2. عرض القطعة المختارة فقط
-                    parcel.setStyle({ fillColor: "blue", fillOpacity: 0.8, opacity: 1 });
+  // اجمع كل الأرقام من الطبقة
+  parcelsLayer.eachLayer(layer => {
+    const id = layer.feature.properties.ParcelNumb;
+    if (id && !allParcels.includes(id)) {
+      allParcels.push(id);
+    }
+  });
 
-                    // 3. تكبير الخريطة لتظهر القطعة المختارة في المنتصف
-                    map.fitBounds(parcel.getBounds());
+  // أضف أول 4 فقط + خيار عرض المزيد
+  const initial = allParcels.slice(0, 4);
+  initial.forEach(id => {
+    const option = document.createElement('option');
+    option.value = id;
+    option.textContent = id;
+    select.appendChild(option);
+  });
 
-                    // 4. تخزين القطعة المختارة
-                    selectedParcel = parcel;
-                };
-                resultList.appendChild(listItem);
-            });
+  const moreOption = document.createElement('option');
+  moreOption.value = 'more';
+  moreOption.textContent = 'عرض المزيد...';
+  select.appendChild(moreOption);
 
-            // إعادة تفعيل عرض القطعة المختارة إذا كانت موجودة
-            if (selectedParcel) {
-                selectedParcel.setStyle({ fillColor: "blue", fillOpacity: 0.8, opacity: 1 });
-                map.fitBounds(selectedParcel.getBounds());
-            }
+  loadedParcels = false;
+}
 
-            document.getElementById('showMore').style.display = 'none'; // إخفاء زر "عرض المزيد" بعد الضغط عليه
-        }
+function searchParcel() {
+  const selectedId = document.getElementById('parcel-select').value;
 
-        function closeResultModal() {
-            document.getElementById('resultModal').style.display = 'none';
-        }
-    </script>
+  // إذا المستخدم اختار "عرض المزيد"
+  if (selectedId === 'more') {
+    showAllParcels();
+    return;
+  }
+
+  // كود البحث العادي
+  highlightedParcels.forEach(layer => {
+    const original = originalStyles.get(layer._leaflet_id);
+    if (original) layer.setStyle(original);
+  });
+
+  highlightedParcels = [];
+
+  parcelsLayer.eachLayer(layer => {
+    const id = layer.feature.properties.ParcelNumb;
+    if (id == selectedId) {
+      layer.setStyle({ color: 'darkgreen', weight: 3, fillColor: '#f5f5dc', fillOpacity: 0.6 });
+      highlightedParcels.push(layer);
+    }
+  });
+  showSearchLegend();
+}
+function showAllParcels() {
+  const select = document.getElementById('parcel-select');
+  select.innerHTML = '';
+
+  allParcels.forEach(id => {
+    const option = document.createElement('option');
+    option.value = id;
+    option.textContent = id;
+    select.appendChild(option);
+  });
+
+  loadedParcels = true;
+
+  // ✨ إعادة فتح القائمة تلقائيًا بعد التحديث:
+  select.focus();
+  select.size = 6; // أو أي رقم مناسب لعرض العناصر
+}
+
+
+function resetSearch() {
+  highlightedParcels.forEach(layer => {
+    const original = originalStyles.get(layer._leaflet_id);
+    if (original) {
+      layer.setStyle(original);
+    } else {
+      layer.setStyle({ color: '#996633', weight: 1, fillColor: '#f5f5dc', fillOpacity: 0.6 });
+    }
+  });
+  highlightedParcels = [];
+  parcelsLayer.eachLayer(layer => {
+    const f = layer.feature;
+    layer.bindPopup(`رقم القطعة: ${f.properties.ParcelNumb || "-"}<br>رقم الحوض: ${f.properties.BlockNumbe || "-"}<br>اسم الحوض: ${f.properties.BlockName_ || "-"}`);
+  });
+  document.getElementById('parcel-select').selectedIndex = 0;
+  hideSearchLegend();
+}
+
+function toggleSearchPanel() {
+  const panel = document.getElementById('search-panel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+var legend = L.control({ position: 'bottomright' });
+legend.onAdd = function (map) {
+  const div = L.DomUtil.create('div', 'legend');
+  div.innerHTML += "<b>عرض الطرق بالمتر</b><br>";
+  const widths = [
+    { color: '#ffff00', label: '4 م' },
+    { color: '#ffd700', label: '6 م' },
+    { color: '#ffa500', label: '8 م' },
+    { color: '#ff8c00', label: '10 م' },
+    { color: '#ff4500', label: '12 م' },
+    { color: '#ff0000', label: '14 م أو أكثر' }
+  ];
+  widths.forEach(w => {
+    div.innerHTML += `<div style=\"display: flex; align-items: center; margin-bottom: 4px;\"><div style=\"width: 30px; height: 2px; background:${w.color}; margin-left: 6px;\"></div><span>${w.label}</span></div>`;
+  });
+  return div;
+};
+legend.addTo(map);
+// زر إظهار/إخفاء صندوق الطبقات
+document.getElementById('layer-toggle').addEventListener('click', () => {
+  const box = document.querySelector('.leaflet-control-layers');
+  if (box.style.display === 'block') {
+    box.style.display = 'none';
+  } else {
+    box.style.display = 'block';
+  }
+});
+// 🟨 مفتاح خاص بتحليل البفر
+let bufferLegend;
+
+function showBufferLegend() {
+  if (bufferLegend) return; // ما نضيفه مرتين
+
+  bufferLegend = L.control({ position: 'bottomleft' });
+  bufferLegend.onAdd = function (map) {
+    const div = L.DomUtil.create('div', 'legend');
+    div.innerHTML = "<b>تحليل تأثير البفر</b><br>";
+    div.innerHTML += `<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:#cc0000;margin-left:6px;border-radius:2px;"></span> اقتطاع كبير فقط</div>`;
+    div.innerHTML += `<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:blue;margin-left:6px;border-radius:2px;"></span> عرض أقل من 12م فقط</div>`;
+    div.innerHTML += `<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:#FFD700;margin-left:6px;border-radius:2px;"></span> اقتطاع كبير + عرض أقل من 12م</div>`;
+    return div;
+  };
+  bufferLegend.addTo(map);
+}
+
+function hideBufferLegend() {
+  if (bufferLegend) {
+    map.removeControl(bufferLegend);
+    bufferLegend = null;
+  }
+}
+// ✅ مفتاح خاص بنتائج البحث
+let searchLegend;
+
+function showSearchLegend() {
+  if (searchLegend) return;
+
+  searchLegend = L.control({ position: 'bottomleft' });
+  searchLegend.onAdd = function (map) {
+    const div = L.DomUtil.create('div', 'legend');
+    div.innerHTML = "<b>نتيجة البحث</b><br>";
+    div.innerHTML += `<div style="margin-bottom:4px;"><span style="display:inline-block;width:12px;height:12px;background:darkgreen;margin-left:6px;border-radius:2px;"></span> نتيجة البحث عن رقم القطعة</div>`;
+    return div;
+  };
+  searchLegend.addTo(map);
+}
+
+function hideSearchLegend() {
+  if (searchLegend) {
+    map.removeControl(searchLegend);
+    searchLegend = null;
+  }
+}
+
+</script>
 </body>
 </html>
