@@ -1,55 +1,248 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <title>Mazari Alnubani Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>تخطيط الطرق في مزارع النوباني</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script type="text/javascript">
+    (function () {
+      emailjs.init("XRA0h_mpIGk8Qdg7N"); // 🔑 هذا هو Public Key
+    })();
+  </script>
   <style>
-    #map {
-      height: 100vh;
+    :root {
+      --primary: #a8dadc;
+      --secondary: #457b9d;
+      --accent: #f4a261;
+      --bg-light: #f9f9f9;
+      --text-dark: #264653;
+      --white: #ffffff;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Tajawal', sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-dark);
+      line-height: 1.8;
+    }
+
+    header {
+      background: linear-gradient(to left, var(--primary), var(--secondary));
+      color: var(--white);
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+    }
+
+    header p {
+      font-size: 1.2rem;
+      margin-top: 10px;
+    }
+
+    .btn {
+      background-color: var(--white);
+      color: var(--secondary);
+      padding: 10px 20px;
+      margin-top: 20px;
+      display: inline-block;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: bold;
+      border: 2px solid var(--secondary);
+    }
+
+    nav {
+      background-color: var(--secondary);
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    nav a {
+      color: white;
+      padding: 14px 20px;
+      text-decoration: none;
+      display: block;
+      font-weight: 500;
+    }
+
+    nav a:hover {
+      background-color: var(--primary);
+    }
+
+    section {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    }
+
+    section h2 {
+      color: var(--secondary);
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      background-color: var(--secondary);
+      color: var(--white);
+      margin-top: 40px;
+    }
+
+    form label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    form input,
+    form select,
+    form textarea {
       width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    form button {
+      background-color: var(--secondary);
+      color: white;
+      padding: 10px 20px;
+      margin-top: 20px;
+      border: none;
+      border-radius: 25px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    form button:hover {
+      background-color: var(--accent);
     }
   </style>
 </head>
 <body>
-  <div id="map"></div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<header>
+  <h1><i class="fas fa-road"></i> تخطيط الطرق في مزارع النوباني</h1>
+  <p>مبادرة توازن بين تطوير البنية التحتية وحماية حقوق الملاك</p>
+  <a href="https://raghadakare.github.io/map/index.html" class="btn">انتقل إلى الخريطة</a>
+</header>
 
-  <script>
-    const map = L.map('map').setView([32.083, 35.198], 15); // إحداثيات مزارع النوباني
+<nav>
+  <a href="#about">عن المشروع</a>
+  <a href="#background">الخلفية</a>
+  <a href="#challenges">التحديات</a>
+  <a href="#contact">تواصل معنا</a>
+  <a href="#complaints">الاعتراضات والشكاوى</a>
+</nav>
 
-    // Basemap: World Imagery
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: '© Esri, Maxar, Earthstar Geographics'
-    }).addTo(map);
+<section id="about">
+  <h2><i class="fas fa-info-circle"></i> عن المشروع</h2>
+  <p>يسلط المشروع الضوء على أهمية تنظيم الطرق في بلدة مزارع النوباني لتفادي العشوائية وحماية حقوق الملاك وتحسين جودة الحياة.</p>
+</section>
 
-    // طبقات GeoJSON
-    const layers = {
-      "Boundary Master Plan Proposed": "Boundary_Master_plan_proposed.geojson",
-      "UMP Blocks": "Ump_blocks.geojson",
-      "UMP Expansion": "Ump_expansion.geojson",
-      "Boundary Master": "boundry_master.geojson",
-      "Mazari": "mazari.geojson",
-      "Roads Network": "roads_network.geojson",
-      "Tapo Blocks": "tapo_bocks.geojson",
-      "Tapo Boundary": "tapo_boundry.geojson",
-    };
+<section id="background">
+  <h2><i class="fas fa-history"></i> الخلفية التاريخية</h2>
+  <p>لم يتم اعتماد مخططات هيكلية شاملة منذ سنوات، ما أدى لغياب شبكة طرق منظمة تلبي احتياجات السكان المتزايدة.</p>
+</section>
 
-    const overlayMaps = {};
+<section id="challenges">
+  <h2><i class="fas fa-exclamation-triangle"></i> التحديات الحالية</h2>
+  <ul>
+    <li>طرق ضيقة وغير ممهدة.</li>
+    <li>تعديات على الأراضي الخاصة.</li>
+    <li>صعوبة إصدار رخص بناء.</li>
+    <li>نقص بالخدمات المرتبطة بشبكة الطرق.</li>
+  </ul>
+</section>
 
-    for (const [name, file] of Object.entries(layers)) {
-      fetch(file)
-        .then(res => res.json())
-        .then(data => {
-          const layer = L.geoJSON(data);
-          layer.addTo(map);
-          overlayMaps[name] = layer;
-          L.control.layers(null, overlayMaps, { collapsed: false }).addTo(map);
-        })
-        .catch(err => console.error(`فشل تحميل ${file}:`, err));
-    }
-  </script>
+<section id="contact">
+  <h2><i class="fas fa-envelope"></i> تواصل معنا</h2>
+  <p>هل لديك استفسار أو اقتراح؟ تواصل معنا عبر <a href="mailto:mazarialnubani@gmail.com">mazarialnubani@gmail.com</a>.</p>
+</section>
+
+<section id="complaints">
+  <h2><i class="fas fa-comment-dots"></i> نموذج الاعتراضات والشكاوى</h2>
+  <form id="complaintForm">
+    <label for="name">الاسم الكامل</label>
+    <input type="text" id="name" name="name" required>
+
+    <label for="phone">رقم الهاتف</label>
+    <input type="tel" id="phone" name="phone" required>
+
+    <label for="piece">رقم قطعة الأرض</label>
+    <input type="text" id="piece" name="piece" required>
+
+    <label for="hod">رقم الحوض</label>
+    <input type="text" id="hod" name="hod" required>
+
+    <label for="area">المساحة (م²)</label>
+    <input type="number" id="area" name="area" step="0.01">
+
+    <label for="ownership">نوع الملكية</label>
+    <input type="text" id="ownership" name="ownership">
+
+    <label for="relation">علاقة المشتكي بالملكية</label>
+    <select id="relation" name="relation">
+      <option value="مالك">مالك</option>
+      <option value="متصرف">متصرف</option>
+      <option value="منتفع">منتفع</option>
+      <option value="وكيل">وكيل</option>
+    </select>
+
+    <label for="problem">تفاصيل الشكوى أو الاعتراض</label>
+    <textarea id="problem" name="problem" rows="5" required></textarea>
+
+    <div style="background-color:#fce4ec; padding: 12px; border: 1px solid #f06292; border-radius: 8px; margin-top: 20px; color: #880e4f;">
+      ⚠️ يرجى إرسال <strong>صورة الهوية</strong> و<strong>وثائق الأرض</strong> (إن وجدت) إلى البريد التالي:
+      <br>
+      <a href="mailto:mazarialnubani@gmail.com" style="color:#d81b60;">mazarialnubani@gmail.com</a>
+    </div>
+
+    <button type="submit">إرسال الشكوى</button>
+  </form>
+</section>
+
+<footer>
+  &copy; 2025 مشروع تخرج - دائرة الجيوانفورماتكس - جامعة بيرزيت | جميع الحقوق محفوظة.
+</footer>
+
+<script>
+  document.getElementById("complaintForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    emailjs.send("service_4aeb64f", "template_l6rsw9q", {
+      name: document.getElementById("name").value,
+      phone: document.getElementById("phone").value,
+      piece: document.getElementById("piece").value,
+      hod: document.getElementById("hod").value,
+      area: document.getElementById("area").value,
+      ownership: document.getElementById("ownership").value,
+      relation: document.getElementById("relation").value,
+      problem: document.getElementById("problem").value
+    }).then(function (response) {
+      alert("✅ تم إرسال الشكوى بنجاح!");
+      document.getElementById("complaintForm").reset();
+    }, function (error) {
+      alert("❌ حدث خطأ أثناء الإرسال. يرجى المحاولة لاحقًا.");
+      console.error(error);
+    });
+  });
+</script>
+
 </body>
 </html>
