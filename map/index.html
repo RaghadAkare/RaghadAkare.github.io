@@ -100,12 +100,13 @@
 <button id="layer-toggle">طبقات المشروع</button>
 <div class="buffer-panel" id="buffer-panel">
   <h4>تحليل اقتطاع الطريق</h4>
-  <label>اختر عرض البفر (متر):</label>
+  <label> : (Buffer) اختر عرض المنطقة العازلة بالمتر  </label>
 <select id="buffer-width">
   <option value="2">2</option>
   <option value="4">4</option>
   <option value="6">6</option>
   <option value="8">8</option>
+  <option value="10">10</option>
 </select>
 
   <button onclick="applyBuffer()">تطبيق البفر</button>
@@ -155,13 +156,16 @@ function updateLoading() {
   if (loadedLayers >= 6) document.getElementById('loading-indicator').style.display = 'none';
 }
 function getColor(width) {
-  return width <= 4 ? '#ffff00' :
-         width <= 6 ? '#ffd700' :
-         width <= 8 ? '#ffa500' :
-         width <= 10 ? '#ff8c00' :
-         width <= 12 ? '#ff4500' :
-         '#ff0000';
+  if (width <= 4) return '#1f77b4';      // أزرق
+  if (width <= 6) return '#2ca02c';      // أخضر
+  if (width <= 8) return '#d62728';      // أحمر
+  if (width <= 10) return '#9467bd';     // بنفسجي
+  if (width <= 12) return '#ff7f0e';     // برتقالي
+  if (width <= 14) return '#17becf';     // تركواز
+  return '#8c564b';                      // بني: أكثر من 14
 }
+
+
 fetch('https://cdn.jsdelivr.net/gh/RaghadAkare/RaghadAkare.github.io/Parcels.geojson')
   .then(res => res.json())
   .then(data => {
@@ -205,12 +209,18 @@ fetch('https://raw.githubusercontent.com/RaghadAkare/RaghadAkare.github.io/main/
         const w = parseFloat(f.properties.width);
         return { color: getColor(w), weight: 2, dashArray: "3,3", fill: true, fillOpacity: 0.01 };
       },
-      onEachFeature: (feature, layer) => {
-        layer.on('click', () => {
-          selectedRoadFeature = feature;
-          document.getElementById('buffer-panel').style.display = 'block';
-        });
-      }
+    onEachFeature: (feature, layer) => {
+  const width = feature.properties.width;
+  layer.bindPopup(`📏 عرض الطريق: ${width} م`);
+
+layer.on('click', function (e) {
+  selectedRoadFeature = feature;
+  document.getElementById('buffer-panel').style.display = 'block';
+  layer.openPopup(e.latlng); // ✅ يفتح الـ popup في موقع النقرة بالضبط
+});
+
+}
+
     }).addTo(map);
     layerControl.addOverlay(roadLayer, 'شبكة طرق التوسع');
     loadedLayers++;
@@ -241,7 +251,7 @@ fetch('https://cdn.jsdelivr.net/gh/RaghadAkare/RaghadAkare.github.io/roads_insid
         return { color: getColor(w), weight: 2, fill: false };
       }
     }).addTo(map);
-    layerControl.addOverlay(layer, 'الشوارع الداخلية');
+    layerControl.addOverlay(layer, 'الشوارع داخل المخطط');
     loadedLayers++;
     updateLoading();
   });
@@ -354,20 +364,21 @@ function populateParcelDropdown() {
   select.innerHTML = '';
   allParcels = [];
 
-  // اجمع كل الأرقام من الطبقة
   parcelsLayer.eachLayer(layer => {
     const id = layer.feature.properties.ParcelNumb;
-    if (id && !allParcels.includes(id)) {
-      allParcels.push(id);
+    const block = layer.feature.properties.BlockNumbe;
+    if (id && block) {
+      const label = `قطعة ${id} - حوض ${block}`;
+      const value = `${id}|${block}`; // استخدم فاصل لتمييز القيمتين
+      allParcels.push({ value, label });
     }
   });
 
-  // أضف أول 4 فقط + خيار عرض المزيد
   const initial = allParcels.slice(0, 4);
-  initial.forEach(id => {
+  initial.forEach(({ value, label }) => {
     const option = document.createElement('option');
-    option.value = id;
-    option.textContent = id;
+    option.value = value;
+    option.textContent = label;
     select.appendChild(option);
   });
 
@@ -379,16 +390,17 @@ function populateParcelDropdown() {
   loadedParcels = false;
 }
 
-function searchParcel() {
-  const selectedId = document.getElementById('parcel-select').value;
 
-  // إذا المستخدم اختار "عرض المزيد"
-  if (selectedId === 'more') {
+function searchParcel() {
+  const selectedValue = document.getElementById('parcel-select').value;
+
+  if (selectedValue === 'more') {
     showAllParcels();
     return;
   }
 
-  // كود البحث العادي
+  const [selectedId, selectedBlock] = selectedValue.split('|');
+
   highlightedParcels.forEach(layer => {
     const original = originalStyles.get(layer._leaflet_id);
     if (original) layer.setStyle(original);
@@ -398,30 +410,34 @@ function searchParcel() {
 
   parcelsLayer.eachLayer(layer => {
     const id = layer.feature.properties.ParcelNumb;
-    if (id == selectedId) {
-      layer.setStyle({ color: 'darkgreen', weight: 3, fillColor: '#f5f5dc', fillOpacity: 0.6 });
-      highlightedParcels.push(layer);
-    }
+    const block = layer.feature.properties.BlockNumbe;
+ if (id == selectedId && block == selectedBlock) {
+  layer.setStyle({ color: 'darkgreen', weight: 3, fillColor: '#f5f5dc', fillOpacity: 0.6 });
+  highlightedParcels.push(layer);
+  map.fitBounds(layer.getBounds()); // ⬅️ هذا السطر الجديد يعمل الزووم
+}
+
   });
+
   showSearchLegend();
 }
+
 function showAllParcels() {
   const select = document.getElementById('parcel-select');
   select.innerHTML = '';
 
-  allParcels.forEach(id => {
+  allParcels.forEach(({ value, label }) => {
     const option = document.createElement('option');
-    option.value = id;
-    option.textContent = id;
+    option.value = value;
+    option.textContent = label;
     select.appendChild(option);
   });
 
   loadedParcels = true;
-
-  // ✨ إعادة فتح القائمة تلقائيًا بعد التحديث:
   select.focus();
-  select.size = 6; // أو أي رقم مناسب لعرض العناصر
+  select.size = 6;
 }
+
 
 
 function resetSearch() {
@@ -452,14 +468,16 @@ legend.onAdd = function (map) {
   div.style.marginBottom = '40px'; // ✨ ارفع المفتاح لفوق شوي
 
   div.innerHTML += "<b>عرض الطرق بالمتر</b><br>";
-  const widths = [
-    { color: '#ffff00', label: '4 م' },
-    { color: '#ffd700', label: '6 م' },
-    { color: '#ffa500', label: '8 م' },
-    { color: '#ff8c00', label: '10 م' },
-    { color: '#ff4500', label: '12 م' },
-    { color: '#ff0000', label: '14 م أو أكثر' }
-  ];
+const widths = [
+  { color: '#1f77b4', label: 'عرض ≤ 4 م' },
+  { color: '#2ca02c', label: 'عرض ≤ 6 م' },
+  { color: '#d62728', label: 'عرض ≤ 8 م' },
+  { color: '#9467bd', label: 'عرض ≤ 10 م' },
+  { color: '#ff7f0e', label: 'عرض ≤ 12 م' },
+  { color: '#17becf', label: 'عرض ≤ 14 م' },
+  { color: '#8c564b', label: 'عرض > 14 م' }
+];
+
   widths.forEach(w => {
     div.innerHTML += `<div style="display: flex; align-items: center; margin-bottom: 4px;">
                         <div style="width: 30px; height: 2px; background:${w.color}; margin-left: 6px;"></div>
