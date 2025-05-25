@@ -411,11 +411,12 @@ function searchParcel() {
   parcelsLayer.eachLayer(layer => {
     const id = layer.feature.properties.ParcelNumb;
     const block = layer.feature.properties.BlockNumbe;
- if (id == selectedId && block == selectedBlock) {
-  layer.setStyle({ color: 'darkgreen', weight: 3, fillColor: '#f5f5dc', fillOpacity: 0.6 });
+if (id == selectedId && block == selectedBlock) {
+  layer.setStyle({ color: 'yellow', weight: 2, fillColor: 'yellow', fillOpacity: 0.7 });
   highlightedParcels.push(layer);
-  map.fitBounds(layer.getBounds()); // ⬅️ هذا السطر الجديد يعمل الزووم
+  map.fitBounds(layer.getBounds());
 }
+
 
   });
 
