@@ -233,7 +233,7 @@ fetch('https://cdn.jsdelivr.net/gh/RaghadAkare/RaghadAkare.github.io@main/Ump_ex
   })
   .then(data => {
     const expansionLayer = L.geoJSON(data, {
-      style: { color: "blue", weight: 2, dashArray: "5,5", fill: false }
+      style: { color: "blue", weight: 1, fill: false }
     }).addTo(map);
     
     layerControl.addOverlay(expansionLayer, 'حدود التوسعة');
