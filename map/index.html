@@ -65,11 +65,7 @@
       line-height: 1.5;
       border-radius: 5px;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
-      border: 2px solid black;
-      position: absolute;
-      bottom: 30px;
       right: 20px;
-      z-index: 1000;
     }
 
     #layer-toggle {
@@ -581,7 +577,7 @@ function toggleSearchPanel() {
 var legend = L.control({ position: 'bottomright' });
 legend.onAdd = function (map) {
   const div = L.DomUtil.create('div', 'legend');
-  div.style.marginBottom = '50px'; // ✨ ارفع المفتاح لفوق شوي
+  div.style.marginBottom = '70px'; // ✨ ارفع المفتاح لفوق شوي
 
   div.innerHTML += "<b>عرض الطرق بالمتر</b><br>";
 const widths = [
