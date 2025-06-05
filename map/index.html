@@ -177,6 +177,15 @@
 <!-- نافذة البحث -->
 <div id="search-panel" style="display:none; position:absolute; top:120px; right:20px; background:white; padding:15px; border:2px solid #004d66; border-radius:8px; width:260px; z-index:1001;">
   <h4 style="margin-top:0; color:#004d66;">اختر رقم القطعة:</h4>
+<label>رقم القطعة (يدوي):</label>
+<input type="number" id="manual-parcel" style="width:100%; padding:6px; margin-bottom:8px;" />
+<label>رقم الحوض (يدوي):</label>
+<input type="number" id="manual-block" style="width:100%; padding:6px; margin-bottom:8px;" />
+<label>اسم الحي (اختياري):</label>
+<select id="quarter-select" style="width:100%; padding:6px; margin-bottom:8px;">
+  <option value="">-- اختر إذا وُجد --</option>
+</select>
+
   <select id="parcel-select" style="width:100%; padding:6px; border-radius:4px;"></select>
   <button onclick="searchParcel()" style="margin-top:8px; width:100%; background:#004d66; color:white; padding:8px; border:none; border-radius:4px;">بحث</button>
   <button onclick="resetSearch()" style="margin-top:5px; width:100%; background:#ccc; color:black; padding:8px; border:none; border-radius:4px;">إعادة التعيين</button>
@@ -235,7 +244,13 @@ fetch('https://cdn.jsdelivr.net/gh/RaghadAkare/RaghadAkare.github.io/Parcels.geo
         const id = feature.properties.ParcelNumb || '-';
         const blockNum = feature.properties.BlockNumbe || '-';
         const blockName = feature.properties.BlockName_ || '-';
-        layer.bindPopup(`رقم القطعة: ${id}<br>رقم الحوض: ${blockNum}<br>اسم الحوض: ${blockName}`);
+let popup = `رقم القطعة: ${id}<br>رقم الحوض: ${blockNum}<br>اسم الحوض: ${blockName}`;
+const quarter = feature.properties.QuarterNam;
+if (quarter && quarter.trim() !== '') {
+  popup += `<br>الحي: ${quarter}`;
+}
+layer.bindPopup(popup);
+
       }
     }).addTo(map);
 
@@ -476,10 +491,16 @@ function populateParcelDropdown() {
   allParcels = [];
 
   parcelsLayer.eachLayer(layer => {
-    const id = layer.feature.properties.ParcelNumb;
-    const block = layer.feature.properties.BlockNumbe;
+const id = layer.feature.properties.ParcelNumb;
+const block = layer.feature.properties.BlockNumbe;
+const quarter = layer.feature.properties.QuarterNam; // اسم الحي
+
     if (id && block) {
-      const label = `قطعة ${id} - حوض ${block}`;
+let label = `قطعة ${id} - حوض ${block}`;
+if (quarter && quarter.trim() !== "") {
+  label += ` - الحي: ${quarter}`;
+}
+
       const value = `${id}|${block}`; // استخدم فاصل لتمييز القيمتين
       allParcels.push({ value, label });
     }
@@ -503,9 +524,30 @@ function populateParcelDropdown() {
 
 
 function searchParcel() {
+const manualId = document.getElementById('manual-parcel').value;
+const manualBlock = document.getElementById('manual-block').value;
+const selectedQuarter = document.getElementById('quarter-select').value;
+
   const selectedValue = document.getElementById('parcel-select').value;
 
   if (selectedValue === 'more') {
+if (manualId && manualBlock) {
+  parcelsLayer.eachLayer(layer => {
+    const id = layer.feature.properties.ParcelNumb;
+    const block = layer.feature.properties.BlockNumbe;
+    const quarter = layer.feature.properties.QuarterNam;
+    
+    const quarterMatch = !selectedQuarter || (quarter && quarter.trim() === selectedQuarter);
+    if (id == manualId && block == manualBlock && quarterMatch) {
+      layer.setStyle({ color: 'yellow', weight: 2, fillColor: 'yellow', fillOpacity: 0.7 });
+      highlightedParcels.push(layer);
+      map.fitBounds(layer.getBounds());
+    }
+  });
+  showSearchLegend();
+  return;
+}
+
     showAllParcels();
     return;
   }
@@ -562,6 +604,10 @@ function resetSearch() {
     }
   });
   highlightedParcels = [];
+document.getElementById('manual-parcel').value = '';
+document.getElementById('manual-block').value = '';
+document.getElementById('quarter-select').innerHTML = '<option value=\"\">-- اختر إذا وُجد --</option>';
+
   parcelsLayer.eachLayer(layer => {
     const f = layer.feature;
     layer.bindPopup(`رقم القطعة: ${f.properties.ParcelNumb || "-"}<br>رقم الحوض: ${f.properties.BlockNumbe || "-"}<br>اسم الحوض: ${f.properties.BlockName_ || "-"}`);
@@ -676,6 +722,34 @@ function hideSearchLegend() {
     map.removeControl(searchLegend);
     searchLegend = null;
   }
+}
+document.getElementById('manual-parcel').addEventListener('input', updateQuarterOptions);
+document.getElementById('manual-block').addEventListener('input', updateQuarterOptions);
+
+function updateQuarterOptions() {
+  const parcel = document.getElementById('manual-parcel').value;
+  const block = document.getElementById('manual-block').value;
+  const quarterSelect = document.getElementById('quarter-select');
+  quarterSelect.innerHTML = '<option value=\"\">-- اختر إذا وُجد --</option>';
+
+  if (!parcel || !block) return;
+
+  const found = new Set();
+  parcelsLayer.eachLayer(layer => {
+    const p = layer.feature.properties;
+    if (p.ParcelNumb == parcel && p.BlockNumbe == block) {
+      if (p.QuarterNam && p.QuarterNam.trim() !== '') {
+        found.add(p.QuarterNam.trim());
+      }
+    }
+  });
+
+  found.forEach(q => {
+    const option = document.createElement('option');
+    option.value = q;
+    option.textContent = q;
+    quarterSelect.appendChild(option);
+  });
 }
 
 </script>
