@@ -396,6 +396,39 @@ map.whenReady(() => {
   }, 300);
 });
 
+setTimeout(() => {
+  document.querySelectorAll('.leaflet-control-layers-overlays label').forEach(label => {
+    const span = label.querySelector('span');
+    const text = span.textContent.trim();
+
+    let color = null;
+
+    if (text.includes('أراضي القرية')) color = 'brown';
+    else if (text.includes('حدود التوسعة')) color = 'blue';
+    else if (text.includes('شبكة الطرق')) color = 'black';
+    else if (text.includes('أحواض الطابو')) color = 'orange';
+    else if (text.includes('قطع أراضي التوسع')) color = '#f5f5dc';
+    else if (text.includes('شبكة طرق التوسع')) color = 'red';
+    else if (text.includes('الشوارع داخل المخطط')) color = 'blue';
+    else if (text.includes('أراضي الاعتراض')) color = 'purple';
+    else if (text.includes('حدود المخطط الهيكلي')) color = 'blue';
+    else if (text.includes('أحواض المخطط الهيكلي')) color = 'lightgreen';
+
+    if (color) {
+      const icon = document.createElement('span');
+      icon.style.display = 'inline-block';
+      icon.style.width = '12px';
+      icon.style.height = text.includes('أحواض') || text.includes('أراضي') ? '12px' : '2px';
+      icon.style.background = color;
+      icon.style.marginLeft = '6px';
+      icon.style.borderRadius = '2px';
+      label.insertBefore(icon, span);
+    }
+  });
+}, 1000);
+
+
+
 function applyBuffer() {
   const width = parseFloat(document.getElementById('buffer-width').value);
   if (!selectedRoadFeature || isNaN(width)) return;
