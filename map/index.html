@@ -523,58 +523,62 @@ if (quarter && quarter.trim() !== "") {
 }
 
 
+/* ✅ تحديث دالة searchParcel لحل مشكلة تجاهل الإدخال اليدوي */
 function searchParcel() {
-const manualId = document.getElementById('manual-parcel').value;
-const manualBlock = document.getElementById('manual-block').value;
-const selectedQuarter = document.getElementById('quarter-select').value;
-
+  const manualId = document.getElementById('manual-parcel').value.trim();
+  const manualBlock = document.getElementById('manual-block').value.trim();
+  const selectedQuarter = document.getElementById('quarter-select').value.trim();
   const selectedValue = document.getElementById('parcel-select').value;
 
-  if (selectedValue === 'more') {
-if (manualId && manualBlock) {
-  parcelsLayer.eachLayer(layer => {
-    const id = layer.feature.properties.ParcelNumb;
-    const block = layer.feature.properties.BlockNumbe;
-    const quarter = layer.feature.properties.QuarterNam;
-    
-    const quarterMatch = !selectedQuarter || (quarter && quarter.trim() === selectedQuarter);
-    if (id == manualId && block == manualBlock && quarterMatch) {
-      layer.setStyle({ color: 'yellow', weight: 2, fillColor: 'yellow', fillOpacity: 0.7 });
-      highlightedParcels.push(layer);
-      map.fitBounds(layer.getBounds());
-    }
-  });
-  showSearchLegend();
-  return;
-}
-
-    showAllParcels();
-    return;
-  }
-
-  const [selectedId, selectedBlock] = selectedValue.split('|');
-
+  // إعادة تهيئة الأشكال المظللة السابقة
   highlightedParcels.forEach(layer => {
     const original = originalStyles.get(layer._leaflet_id);
     if (original) layer.setStyle(original);
   });
-
   highlightedParcels = [];
 
-  parcelsLayer.eachLayer(layer => {
-    const id = layer.feature.properties.ParcelNumb;
-    const block = layer.feature.properties.BlockNumbe;
-if (id == selectedId && block == selectedBlock) {
-  layer.setStyle({ color: 'yellow', weight: 2, fillColor: 'yellow', fillOpacity: 0.7 });
-  highlightedParcels.push(layer);
-  map.fitBounds(layer.getBounds());
+  // ✅ إذا كان الإدخال اليدوي موجود نبحث من خلاله أولاً
+  if (manualId && manualBlock) {
+    parcelsLayer.eachLayer(layer => {
+      const props = layer.feature.properties;
+      const id = props.ParcelNumb;
+      const block = props.BlockNumbe;
+      const quarter = props.QuarterNam ? props.QuarterNam.trim() : '';
+      const quarterMatch = !selectedQuarter || quarter === selectedQuarter;
+
+      if (id == manualId && block == manualBlock && quarterMatch) {
+        layer.setStyle({ color: 'yellow', weight: 2, fillColor: 'yellow', fillOpacity: 0.7 });
+        highlightedParcels.push(layer);
+        map.fitBounds(layer.getBounds());
+      }
+    });
+    showSearchLegend();
+    return;
+  }
+
+  // ✅ إذا ما في إدخال يدوي نستخدم القيمة من القائمة المنسدلة
+  if (!selectedValue || selectedValue === '' || selectedValue === 'more') {
+    if (selectedValue === 'more') showAllParcels();
+    return;
+  }
+
+  if (selectedValue.includes('|')) {
+    const [selectedId, selectedBlock] = selectedValue.split('|');
+
+    parcelsLayer.eachLayer(layer => {
+      const id = layer.feature.properties.ParcelNumb;
+      const block = layer.feature.properties.BlockNumbe;
+      if (id == selectedId && block == selectedBlock) {
+        layer.setStyle({ color: 'yellow', weight: 2, fillColor: 'yellow', fillOpacity: 0.7 });
+        highlightedParcels.push(layer);
+        map.fitBounds(layer.getBounds());
+      }
+    });
+
+    showSearchLegend();
+  }
 }
 
-
-  });
-
-  showSearchLegend();
-}
 
 function showAllParcels() {
   const select = document.getElementById('parcel-select');
